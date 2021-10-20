@@ -22,13 +22,25 @@ QUIET ?= 1
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
-# include and auto-initialize all available sensors
+
+# Include and auto-initialize all available sensors
 USEMODULE += saul_default
+
+# Needed drivers
+USEMODULE += mcp2515net
+
+  # Use modules for networking
+  # gnrc is a meta module including all required, basic gnrc networking modules
+  USEMODULE += gnrc
+  # use the default network interface for the board
+  USEMODULE += netdev_default
+  # automatically initialize the network interface
+  USEMODULE += auto_init_gnrc_netif
+  # shell command to send L2 packets with a simple string
+  USEMODULE += gnrc_txtsnd
+  # the application dumps received packets to stdout
+  USEMODULE += gnrc_pktdump
 
 FEATURES_OPTIONAL += periph_rtc
-
-# include and auto-initialize all available sensors
-USEMODULE += saul_default
-USEMODULE += mcp2515net
 
 include $(RIOTBASE)/Makefile.include

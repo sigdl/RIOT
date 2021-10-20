@@ -32,6 +32,7 @@
 #ifdef MODULE_NETIF
 #include "net/gnrc/pktdump.h"
 #include "net/gnrc.h"
+#include "net/gnrc/netreg.h"
 #endif
 
 int main(void)
@@ -39,6 +40,7 @@ int main(void)
 #ifdef MODULE_NETIF
     gnrc_netreg_entry_t dump = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
                                                           gnrc_pktdump_pid);
+
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 #endif
 

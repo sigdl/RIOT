@@ -23,59 +23,67 @@
 #ifndef MCP2515NET_PARAMS_H
 #define MCP2515NET_PARAMS_H
 
-/********************************************************************************
- * Included Files
- ********************************************************************************/
+/*------------------------------------------------------------------------------*
+ *                                Included Files                                *
+ *------------------------------------------------------------------------------*/
 #include "board.h"
 
 
-/********************************************************************************
- * Pre-processor Definitions
- ********************************************************************************/
-
+/*------------------------------------------------------------------------------*
+ *                           Pre-processor Definitions                          *
+ *------------------------------------------------------------------------------*/
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @name    Set default configuration parameters for the MCP2515NET driver
+ * @name    Default configuration parameters for interface 0
  * @{
  */
-#ifndef MCP2515NET_PARAM_SPI
-#define MCP2515NET_PARAM_SPI       (SPI_DEV(0))
+#ifndef MCP2515NET_IFACE0_SPI
+#define MCP2515NET_IFACE0_SPI       (SPI_DEV(0))
 #endif
-#ifndef MCP2515NET_PARAM_CS
-#define MCP2515NET_PARAM_CS        (GPIO_PIN(0, 0))
+#ifndef MCP2515NET_IFACE0_SPI_MODE
+#define MCP2515NET_IFACE0_SPI_MODE  SPI_MODE_0
 #endif
-#ifndef MCP2515NET_PARAM_INT
-#define MCP2515NET_PARAM_INT       (GPIO_PIN(0, 1))
+#ifndef MCP2515NET_IFACE0_SPI_CLK
+#define MCP2515NET_IFACE0_SPI_CLK   SPI_CLK_10MHZ
 #endif
-#ifndef MCP2515NET_PARAM_RESET
-#define MCP2515NET_PARAM_RESET     (GPIO_PIN(0, 2))
+#ifndef MCP2515NET_IFACE0_CS
+#define MCP2515NET_IFACE0_CS        (GPIO_PIN(0, 0))
+#endif
+#ifndef MCP2515NET_IFACE0_INT
+#define MCP2515NET_IFACE0_INT       (GPIO_PIN(0, 1))
+#endif
+#ifndef MCP2515NET_IFACE0_RESET
+#define MCP2515NET_IFACE0_RESET     (GPIO_PIN(0, 2))
 #endif
 
-#ifndef MCP2515NET_PARAMS
-#define MCP2515NET_PARAMS       { .spi = MCP2515NET_PARAM_SPI,     \
-                                  .cs_pin = MCP2515NET_PARAM_CS,   \
-                                  .int_pin = MCP2515NET_PARAM_INT, \
-                                  .rst_pin = MCP2515NET_PARAM_RESET }
+#ifndef MCP2515NET_IFACE0
+#define MCP2515NET_IFACE0           { .spi      = MCP2515NET_IFACE0_SPI, \
+                                      .spi_mode = MCP2515NET_IFACE0_SPI_MODE, \
+                                      .spi_clk  = MCP2515NET_IFACE0_SPI_CLK, \
+                                      .cs_pin   = MCP2515NET_IFACE0_CS, \
+                                      .int_pin  = MCP2515NET_IFACE0_INT, \
+                                      .rst_pin  = MCP2515NET_IFACE0_RESET }
 #endif
+
+#ifndef MCP2515NET_IFACE
+#define MCP2515NET_IFACE            MCP2515NET_IFACE0
+#endif
+
 /** @} */
 
-
-/********************************************************************************
- * Public Types
- ********************************************************************************/
-static const  mcp2515net_params_t mcp2515net_params[] = {
-    MCP2515NET_PARAMS
+/*------------------------------------------------------------------------------*
+ *                                  Public Types                                *
+ *------------------------------------------------------------------------------*/
+static const socketcan_iface_t  mcp2515net_params[] = {
+    MCP2515NET_IFACE
 };
-/** @} */
 
-
-/********************************************************************************
- * Public Functions
- ********************************************************************************/
-
+/*------------------------------------------------------------------------------*
+ *                                Public Functions                              *
+ *------------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
 }
