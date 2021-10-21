@@ -44,7 +44,7 @@
  */
 typedef struct {
     mutex_t             lock;       /* Exclusive access mutex                   */
-    socketcan_params_t  config;     /* SPI bus config                           */
+    socketcan_params_t *params;     /* CAN config                               */
     netdev_t            netdev;     /* Netdev config                            */
 } mcp2515net_t;
 
@@ -52,6 +52,6 @@ typedef struct {
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-void mcp2515net_setup(mcp2515net_t *dev, const socketcan_iface_t *config, uint8_t index);
+void mcp2515net_setup(mcp2515net_t *dev, socketcan_params_t *config, uint8_t index);
 
 #endif /* MCP2515NET_H */

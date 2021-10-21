@@ -53,8 +53,8 @@ typedef struct {
     uint32_t clock;             /**< Clock for CAN device in Hz                 */
     uint32_t tq;                /**< Time quanta (TQ) in nanoseconds            */
     uint8_t  prop_seg;          /**< Propagation segment in TQs                 */
-    uint8_t  ph_seg1;           /**< Phase buffer segment 1 in TQs              */
-    uint8_t  ph_seg2;           /**< Phase buffer segment 2 in TQs              */
+    uint8_t  ps1;               /**< Phase segment 1 in TQs                     */
+    uint8_t  ps2;               /**< Phase segment 2 in TQs                     */
     uint8_t  sjw;               /**< Synchronisation jump width in TQs          */
 } socketcan_timing_t;
 

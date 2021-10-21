@@ -40,6 +40,8 @@ extern "C" {
  * @name    Default configuration parameters for interface 0
  * @{
  */
+
+ /*     ----- Interface Parameters -----     */
 #ifndef MCP2515NET_IFACE0_SPI
 #define MCP2515NET_IFACE0_SPI       (SPI_DEV(0))
 #endif
@@ -59,17 +61,84 @@ extern "C" {
 #define MCP2515NET_IFACE0_RESET     (GPIO_PIN(0, 2))
 #endif
 
+/*     ----- CAN Parameters -----     
+ *
+ * Default Values 
+ *
+ *  Nominal Bus Length              100 m
+ *  Nominal Bit Rate                500 KHz
+ *  Tq per Bit                      16
+ *  Nominal Bit Time                2 us
+ *  Clock Frequency                 16 MHz
+ *  Tosc                            62.5 ns
+ *  Tq                              125 ns
+ *
+ *  
+ *  BRP = Tq /(2 * Tosc)            1
+ *  
+ *  SyncSeg                         1 Tq
+ *  PropSeg                         2 Tq
+ *  PhaseSeg1                       7 Tq
+ *  PhaseSeg2                       6 Tq
+ *  Synchronization Jump Width      1 Tq
+ *
+ */
+
+#ifndef MCP2515NET_TIMING0_NBR      /* Nominal Bit Rate in bits/sec */
+#define MCP2515NET_TIMING0_NBR      500000
+#endif
+#ifndef MCP2515NET_TIMING0_CLOCK    /* Clock for CAN device in Hz */
+#define MCP2515NET_TIMING0_CLOCK    (8000000ul)
+#endif
+#ifndef MCP2515NET_TIMING0_PROP     /* Propagation segment in TQs */
+#define MCP2515NET_TIMING0_PROP     2
+#endif
+#ifndef MCP2515NET_TIMING0_PS1      /* Phase segment 1 in TQs */
+#define MCP2515NET_TIMING0_PS1      7
+#endif
+#ifndef MCP2515NET_TIMING0_PS2      /* Phase segment 2 in TQs */
+#define MCP2515NET_TIMING0_PS2      6
+#endif
+#ifndef MCP2515NET_TIMING0_SJW      /*  */
+#define MCP2515NET_TIMING0_SJW      1
+#endif
+
 #ifndef MCP2515NET_IFACE0
-#define MCP2515NET_IFACE0           { .spi      = MCP2515NET_IFACE0_SPI, \
+#define MCP2515NET_IFACE0           { \
+                                      .spi      = MCP2515NET_IFACE0_SPI, \
                                       .spi_mode = MCP2515NET_IFACE0_SPI_MODE, \
                                       .spi_clk  = MCP2515NET_IFACE0_SPI_CLK, \
                                       .cs_pin   = MCP2515NET_IFACE0_CS, \
                                       .int_pin  = MCP2515NET_IFACE0_INT, \
-                                      .rst_pin  = MCP2515NET_IFACE0_RESET }
+                                      .rst_pin  = MCP2515NET_IFACE0_RESET \
+                                    }
+#endif
+#ifndef MCP2515NET_TIMING0
+#define MCP2515NET_TIMING0          { \
+                                      .clock    = MCP2515NET_TIMING0_CLOCK, \
+                                      .prop_seg = MCP2515NET_TIMING0_PROP, \
+                                      .ps1      = MCP2515NET_TIMING0_PS1, \
+                                      .ps2      = MCP2515NET_TIMING0_PS2, \
+                                      .sjw      = MCP2515NET_TIMING0_SJW \
+                                    }
+#endif
+#ifndef MCP2515NET_PARAMS0
+#define MCP2515NET_PARAMS0          { \
+                                      .timing   = MCP2515NET_TIMING0, \
+                                      .iface    = MCP2515NET_IFACE0, \
+                                    }
 #endif
 
-#ifndef MCP2515NET_IFACE
-#define MCP2515NET_IFACE            MCP2515NET_IFACE0
+
+
+/**
+ * @name    Array of ALL Interfaces' parameters
+ * @{
+ */
+#ifndef MCP2515NET_PARAMS
+#define MCP2515NET_PARAMS           { \
+                                      MCP2515NET_PARAMS0, \
+                                    }
 #endif
 
 /** @} */
@@ -77,9 +146,7 @@ extern "C" {
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
-static const socketcan_iface_t  mcp2515net_params[] = {
-    MCP2515NET_IFACE
-};
+static socketcan_params_t mcp2515net_params[] = MCP2515NET_PARAMS;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *

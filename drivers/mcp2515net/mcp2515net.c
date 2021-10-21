@@ -214,12 +214,19 @@ static int mcp2515_set(netdev_t *netdev, netopt_t opt, const void *value, size_t
  * @return                  0 on success
  * @return                  <0 on error
  */
-void mcp2515net_setup(mcp2515net_t *dev, const socketcan_iface_t *config, uint8_t index)
+void mcp2515net_setup(mcp2515net_t *dev, socketcan_params_t *config, uint8_t index)
 {
+    /* Load parameters */
+    dev->params = config;
+
+    /* Load driver's interface */
+    dev->netdev.driver = &mcp2515net_driver;
+
+
     dev++;
     config++;
     index++;
-    dev->netdev.driver = &mcp2515net_driver;
+    
 #if 0
 
     dev->p = *params;
