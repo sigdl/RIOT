@@ -49,24 +49,24 @@
 /*------------------------------------------------------------------------------*
  *                          Private Function Prototypes                         *
  *------------------------------------------------------------------------------*/
-static int mcp2515_init(netdev_t *netdev);
-static void mcp2515_isr(netdev_t *netdev);
-static int mcp2515_send(netdev_t *netdev, const iolist_t *iolist);
-static int mcp2515_recv(netdev_t *netdev, void *buf, size_t max_len, void *info);
-static int mcp2515_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
-static int mcp2515_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
+static int mcp2515net_init(netdev_t *netdev);
+static void mcp2515net_isr(netdev_t *netdev);
+static int mcp2515net_send(netdev_t *netdev, const iolist_t *iolist);
+static int mcp2515net_recv(netdev_t *netdev, void *buf, size_t max_len, void *info);
+static int mcp2515net_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
+static int mcp2515net_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 
 
 /*------------------------------------------------------------------------------*
  *                                Private Data                                  *
  *------------------------------------------------------------------------------*/
 static const netdev_driver_t mcp2515net_driver = {
-    .init = mcp2515_init,
-    .isr  = mcp2515_isr,
-    .send = mcp2515_send,
-    .recv = mcp2515_recv,
-    .get  = mcp2515_get,
-    .set  = mcp2515_set,
+    .init = mcp2515net_init,
+    .isr  = mcp2515net_isr,
+    .send = mcp2515net_send,
+    .recv = mcp2515net_recv,
+    .get  = mcp2515net_get,
+    .set  = mcp2515net_set,
 };
 
 /*------------------------------------------------------------------------------*
@@ -82,7 +82,7 @@ static const netdev_driver_t mcp2515net_driver = {
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int mcp2515_init(netdev_t *netdev)
+static int mcp2515net_init(netdev_t *netdev)
 {
     mcp2515net_t *dev;
     
@@ -112,7 +112,7 @@ static int mcp2515_init(netdev_t *netdev)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static void mcp2515_isr(netdev_t *netdev)
+static void mcp2515net_isr(netdev_t *netdev)
 {
     netdev++;
 }
@@ -127,7 +127,7 @@ static void mcp2515_isr(netdev_t *netdev)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int mcp2515_send(netdev_t *netdev, const iolist_t *iolist)
+static int mcp2515net_send(netdev_t *netdev, const iolist_t *iolist)
 {
     netdev++;
     iolist++;
@@ -145,7 +145,7 @@ static int mcp2515_send(netdev_t *netdev, const iolist_t *iolist)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int mcp2515_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
+static int mcp2515net_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
 {
 
     netdev++;
@@ -166,7 +166,7 @@ static int mcp2515_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int mcp2515_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len)
+static int mcp2515net_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len)
 {
     netdev++;
     opt++;
@@ -186,7 +186,7 @@ static int mcp2515_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_l
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int mcp2515_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len)
+static int mcp2515net_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len)
 {
     netdev++;
     opt++;
@@ -205,34 +205,24 @@ static int mcp2515_set(netdev_t *netdev, netopt_t opt, const void *value, size_t
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
 /**
- * @brief MCP2515 SocketCAN driver setup
+ * @brief   Ready the device for initialization through it's netdev interface
  *
- * The MCP2515 device is setup
- *
- * @param[in]  dev          device descriptor
- *
- * @return                  0 on success
- * @return                  <0 on error
+ * @param[in] dev           device descriptor
+ * @param[in] params        peripheral configuration to use
+ * @param[in]   index       Index of @p params in a global parameter struct array.
+ *                          If initialized manually, pass a unique identifier instead.
  */
-void mcp2515net_setup(mcp2515net_t *dev, socketcan_params_t *config, uint8_t index)
+void mcp2515net_setup(mcp2515net_t *dev, socketcan_params_t *params, uint8_t index)
 {
     /* Load parameters */
-    dev->params = config;
+    dev->params = params;
 
     /* Load driver's interface */
     dev->netdev.driver = &mcp2515net_driver;
 
-
-    dev++;
-    config++;
-    index++;
-    
-#if 0
-
-    dev->p = *params;
+    /* Initializa mutex */
     mutex_init(&dev->lock);
-    dev->tx_time = 0;
 
+    /* Register device */
     netdev_register(&dev->netdev, NETDEV_MCP2515, index);
-#endif
 }

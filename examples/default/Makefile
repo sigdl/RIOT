@@ -40,9 +40,11 @@ ifneq (,$(filter $(BOARD),$(BOARD_PROVIDES_NETIF)))
   # gnrc is a meta module including all required, basic gnrc networking modules
   USEMODULE += gnrc
   # use the default network interface for the board
-  USEMODULE += netdev_default
+  #USEMODULE += netdev_default
   # automatically initialize the network interface
   USEMODULE += auto_init_gnrc_netif
+  # Include CAN  support
+  USEMODULE += gnrc_netif_can
   # shell command to send L2 packets with a simple string
   USEMODULE += gnrc_txtsnd
   # the application dumps received packets to stdout

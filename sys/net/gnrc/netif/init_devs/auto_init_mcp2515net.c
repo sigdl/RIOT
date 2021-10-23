@@ -23,7 +23,7 @@
 #include "log.h"
 #include "mcp2515net.h"
 #include "mcp2515net_params.h"
-#include "net/gnrc/netif/ethernet.h"
+#include "net/gnrc/netif/can.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -86,7 +86,9 @@ void auto_init_mcp2515net(void)
 
         /* setup netdev device */
         mcp2515net_setup(&dev[i], &mcp2515net_params[i], i);
-        gnrc_netif_ethernet_create(&_netif[i], stack[i], MCP2515NET_MAC_STACKSIZE,
+
+        /* Create network interface */
+        gnrc_netif_can_create(&_netif[i], stack[i], MCP2515NET_MAC_STACKSIZE,
                                    MCP2515NET_MAC_PRIO, "mcp2515",
                                    &dev[i].netdev);
     }

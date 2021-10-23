@@ -1,5 +1,8 @@
 MODULE := gnrc_netif
 
+ifneq (,$(filter gnrc_netif_can,$(USEMODULE)))
+  DIRS += can
+endif
 ifneq (,$(filter gnrc_netif_ethernet,$(USEMODULE)))
   DIRS += ethernet
 endif

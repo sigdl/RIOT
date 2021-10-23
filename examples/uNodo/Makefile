@@ -32,12 +32,19 @@ USEMODULE += mcp2515net
   # Use modules for networking
   # gnrc is a meta module including all required, basic gnrc networking modules
   USEMODULE += gnrc
+
   # use the default network interface for the board
-  USEMODULE += netdev_default
+  #USEMODULE += netdev_default
+
+  # Use CAN module
+  USEMODULE += gnrc_netif_can
+
   # automatically initialize the network interface
   USEMODULE += auto_init_gnrc_netif
+
   # shell command to send L2 packets with a simple string
   USEMODULE += gnrc_txtsnd
+  
   # the application dumps received packets to stdout
   USEMODULE += gnrc_pktdump
 
