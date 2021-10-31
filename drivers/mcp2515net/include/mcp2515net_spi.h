@@ -20,17 +20,12 @@
  * @author      Grr <gebbet00@gmail.com>
  */
 
-#ifndef MCP2515NET_H
-#define MCP2515NET_H
+#ifndef MCP2515NET_SPI_H
+#define MCP2515NET_SPI_H
 
 /*------------------------------------------------------------------------------*
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
-#include "mutex.h"
-#include "periph/spi.h"
-#include "periph/gpio.h"
-#include "net/netdev.h"
-#include "can/socketcan.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -39,27 +34,14 @@
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
-/**
- * @brief MCP2515 registers descriptor
- */
-typedef struct {
-    uint8_t canctrl;
-
-} mcp2515net_regs_t;
-
-/**
- * @brief MCP2515 general configuration descriptor
- */
-typedef struct {
-    mutex_t                   lock;     /* Exclusive access mutex               */
-    const socketcan_params_t *params;   /* CAN config                           */
-    mcp2515net_regs_t        *regs;     /* MCP2515 registers                    */
-    netdev_t                  netdev;   /* Netdev config                        */
-} mcp2515net_t;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-void mcp2515net_setup(mcp2515net_t *dev, const socketcan_params_t *config, mcp2515net_regs_t *regs, uint8_t index);
+void mcp2515_spi_reset(mcp2515net_t *dev);
+int  mcp2515_spi_test(mcp2515net_t *dev);
+int  mcp2515_spi_read(mcp2515net_t *dev, uint8_t addr, uint8_t *buf, unsigned int len);
+int  mcp2515_spi_bitmod(mcp2515net_t *dev, uint8_t reg, uint8_t mask, uint8_t value);
+void mcp2515_spi_transf(mcp2515net_t *dev, uint8_t *out, uint8_t *in, uint16_t len);
 
-#endif /* MCP2515NET_H */
+#endif /* MCP2515NET_SPI_H */

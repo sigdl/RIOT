@@ -57,10 +57,11 @@
  * @brief   Allocate memory for the device descriptors
  * @{
  */
-static mcp2515net_t dev[MCP2515NET_NUM];
-/** @} */
+static mcp2515net_t         dev[MCP2515NET_NUM];
+static mcp2515net_regs_t    regs[MCP2515NET_NUM];
+static gnrc_netif_t         _netif[MCP2515NET_NUM];
 
-static gnrc_netif_t _netif[MCP2515NET_NUM];
+/** @} */
 
 /**
  * @brief   Stacks for the MAC layer threads
@@ -85,7 +86,7 @@ void auto_init_mcp2515net(void)
         LOG_DEBUG("[auto_init_netif] initializing MCP2515net #%u\n", i);
 
         /* setup netdev device */
-        mcp2515net_setup(&dev[i], &mcp2515net_params[i], i);
+        mcp2515net_setup(&dev[i], &mcp2515net_params[i], &regs[i], i);
 
         /* Create network interface */
         gnrc_netif_can_create(&_netif[i], stack[i], MCP2515NET_MAC_STACKSIZE,

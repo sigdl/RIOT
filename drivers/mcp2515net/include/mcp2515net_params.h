@@ -38,6 +38,30 @@ extern "C" {
 /**
  * @name    Default configuration parameters for interface 0
  * @{
+ *
+ *
+ * Default Values 
+ *
+ *  Clock Frequency (Cf)            16 MHz
+ *  Tosc = 1/Cf                     62.5 ns
+ *
+ *  Nominal Bus Length              100 m
+ *  Nominal Bit Rate (NBR)          500 KHz
+ *  Nominal Bit Time (NBT) = 1/NBR  2 us
+ *
+ * Bit Definition
+ *
+ *  SyncSeg                         1 Tq
+ *  PropSeg                         2 Tq
+ *  PhaseSeg1                       7 Tq
+ *  PhaseSeg2                       6 Tq
+ *  Synchronization Jump Width      1 Tq
+ *
+ *  Tq per Bit (QPB)                16
+ *  Tq = NBT / QPB                  125 ns
+ *  
+ *  BRP = Tq /(2 * Tosc)            1
+ *  
  */
 
  /*     ----- Interface Parameters -----     */
@@ -60,34 +84,12 @@ extern "C" {
 #define MCP2515NET_IFACE0_RESET     (GPIO_PIN(0, 2))
 #endif
 
-/*     ----- CAN Parameters -----     
- *
- * Default Values 
- *
- *  Nominal Bus Length              100 m
- *  Nominal Bit Rate                500 KHz
- *  Tq per Bit                      16
- *  Nominal Bit Time                2 us
- *  Clock Frequency                 16 MHz
- *  Tosc                            62.5 ns
- *  Tq                              125 ns
- *
- *  
- *  BRP = Tq /(2 * Tosc)            1
- *  
- *  SyncSeg                         1 Tq
- *  PropSeg                         2 Tq
- *  PhaseSeg1                       7 Tq
- *  PhaseSeg2                       6 Tq
- *  Synchronization Jump Width      1 Tq
- *
- */
-
+/*       -----  CAN Parameters  -----        */
 #ifndef MCP2515NET_TIMING0_NBR      /* Nominal Bit Rate in bits/sec */
 #define MCP2515NET_TIMING0_NBR      500000
 #endif
 #ifndef MCP2515NET_TIMING0_CLOCK    /* Clock for CAN device in Hz */
-#define MCP2515NET_TIMING0_CLOCK    (8000000ul)
+#define MCP2515NET_TIMING0_CLOCK    (16000000ul)
 #endif
 #ifndef MCP2515NET_TIMING0_PROP     /* Propagation segment in TQs */
 #define MCP2515NET_TIMING0_PROP     2
@@ -102,6 +104,11 @@ extern "C" {
 #define MCP2515NET_TIMING0_SJW      1
 #endif
 
+/* Variable parameters that must be in RAM */
+static uint32_t             nom_bitrate_0;
+static uint32_t             r_bitrate_0;
+static uint32_t             brp_0;
+
 #ifndef MCP2515NET_IFACE0
 #define MCP2515NET_IFACE0           { \
                                       .spi      = MCP2515NET_IFACE0_SPI, \
@@ -114,11 +121,14 @@ extern "C" {
 #endif
 #ifndef MCP2515NET_TIMING0
 #define MCP2515NET_TIMING0          { \
-                                      .clock    = MCP2515NET_TIMING0_CLOCK, \
-                                      .prop_seg = MCP2515NET_TIMING0_PROP, \
-                                      .ps1      = MCP2515NET_TIMING0_PS1, \
-                                      .ps2      = MCP2515NET_TIMING0_PS2, \
-                                      .sjw      = MCP2515NET_TIMING0_SJW \
+                                      .nom_bitrate  = &nom_bitrate_0, \
+                                      .r_bitrate    = &r_bitrate_0, \
+                                      .brp          = &brp_0, \
+                                      .clock        = MCP2515NET_TIMING0_CLOCK, \
+                                      .prop         = MCP2515NET_TIMING0_PROP, \
+                                      .ps1          = MCP2515NET_TIMING0_PS1, \
+                                      .ps2          = MCP2515NET_TIMING0_PS2, \
+                                      .sjw          = MCP2515NET_TIMING0_SJW \
                                     }
 #endif
 #ifndef MCP2515NET_PARAMS0
@@ -145,7 +155,8 @@ extern "C" {
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
-static socketcan_params_t mcp2515net_params[] = MCP2515NET_PARAMS;
+
+static const socketcan_params_t mcp2515net_params[] = MCP2515NET_PARAMS;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *

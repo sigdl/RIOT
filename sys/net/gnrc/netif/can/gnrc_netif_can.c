@@ -42,8 +42,8 @@ static const gnrc_netif_ops_t can_ops = {
     .init = gnrc_netif_default_init,
     .send = _send,
     .recv = _recv,
-    .get = gnrc_netif_get_from_netdev,
-    .set = _set,
+    .get  = gnrc_netif_get_from_netdev,
+    .set  = _set,
 };
 
 int gnrc_netif_can_create(gnrc_netif_t *netif, char *stack, int stacksize,
