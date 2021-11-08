@@ -77,9 +77,9 @@ typedef struct {
     uint32_t *brp;              /**< Bit-rate prescaler                         */
     uint32_t clock;             /**< Clock for CAN device in Hz                 */
     uint32_t tq;                /**< Time quanta (TQ) in nanoseconds            */
-    uint8_t  prop;              /**< Propagation segment in TQs                 */
-    uint8_t  ps1;               /**< Phase segment 1 in TQs                     */
-    uint8_t  ps2;               /**< Phase segment 2 in TQs                     */
+    uint8_t  prseg;             /**< Propagation segment in TQs                 */
+    uint8_t  phseg1;            /**< Phase segment 1 in TQs                     */
+    uint8_t  phseg2;            /**< Phase segment 2 in TQs                     */
     uint8_t  sjw;               /**< Synchronisation jump width in TQs          */
 } socketcan_timing_t;
 

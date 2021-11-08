@@ -122,7 +122,7 @@ static int mcp2515net_init(netdev_t *netdev)
     /* Test if device is functional */
     out_buf[0] = MCP2515_SPI_READ;
     out_buf[1] = MCP2515_CANCTRL;
-    out_buf[2] = MCP2515_STUFFING;
+    /*out_buf[2] = MCP2515_STUFFING;*/
     mcp2515_spi_transf(dev,
                        out_buf,
                        in_buf,
@@ -135,19 +135,54 @@ static int mcp2515net_init(netdev_t *netdev)
 
     /* Obtain the number of Tq per bit */
     bitquanta = 1 + \
-                dev->params->timing.prop + \
-                dev->params->timing.ps1  + \
-                dev->params->timing.ps2;
+                dev->params->timing.prseg + \
+                dev->params->timing.phseg1  + \
+                dev->params->timing.phseg2;
 
     /* Calculate Bitrate Prescaler */
     *dev->params->timing.brp = \
                 (int8_t)((float)dev->params->timing.clock / \
                 ((float)(2 * bitquanta * *dev->params->timing.nom_bitrate)) - 1);
 
+    /* Configure CNF1 register */
+    dev->regs->cnf1 |= (*dev->params->timing.brp & MCP2515_CNF1_BRP_MASK) |
+                       ((dev->params->timing.sjw  & MCP2515_CNF1_SJW_MASK) << MCP2515_CNF1_SJW_SHIFT);
+    out_buf[0] = MCP2515_SPI_WRITE;
+    out_buf[1] = MCP2515_CNF1;
+    out_buf[2] = dev->regs->cnf1;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       3
+                      );
+
+    /* Configure CNF2 register */
+    dev->regs->cnf2 |= (dev->params->timing.prseg  & MCP2515_CNF2_PRSEG_MASK) |
+                      ((dev->params->timing.phseg1 & MCP2515_CNF2_PHSEG1_MASK) << MCP2515_CNF2_PHSEG1_SHIFT);
+    out_buf[0] = MCP2515_SPI_WRITE;
+    out_buf[1] = MCP2515_CNF2;
+    out_buf[2] = dev->regs->cnf2;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       3
+                      );
+
+    /* Configure CNF3 register */
+    dev->regs->cnf3 |= dev->params->timing.phseg2 & MCP2515_CNF3_PHSEG2_MASK;
+    out_buf[0] = MCP2515_SPI_WRITE;
+    out_buf[1] = MCP2515_CNF3;
+    out_buf[2] = dev->regs->cnf3;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       3
+                      );
+
     /* Configure masks and filters */
 
 
-    /* Enable interrupts */
+    /* Enable default interrupts */
     out_buf[0] = MCP2515_SPI_WRITE;
     out_buf[1] = MCP2515_CANINTE;
     out_buf[2] = MCP2515_CANINTE_RX0IE |
@@ -218,23 +253,23 @@ static void mcp2515net_isr(netdev_t *netdev)
                        4
                       );
 
-    /* Process Wake Interrupt */
+    /* ---------- Wake Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_WAKIF) {
         DEBUG("[MCP2515net] isr: wake up\n");
         netdev->event_callback(netdev, NETDEV_EVENT_WAKEUP);
     }
 
-    /* Process Error Interrupt */
+    /* ---------- Error Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_ERRIF) {
 
     }
 
-    /* Process Message Error Interrupt */
+    /* ---------- Message Error Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_MERRF) {
 
     }
 
-    /* Process RX0 Interrupt */
+    /* ---------- RX0 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_RX0IF) {
         DEBUG("[MCP2515NET] isr: RXB0 frame\n");
 
@@ -247,7 +282,7 @@ static void mcp2515net_isr(netdev_t *netdev)
         netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
     }
 
-    /* Process RX1 Interrupt */
+    /* ---------- RX1 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_RX1IF) {
         DEBUG("[MCP2515NET] isr: RXB1 frame\n");
 
@@ -261,7 +296,7 @@ static void mcp2515net_isr(netdev_t *netdev)
         netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
     }
 
-    /* Process TX0 Interrupt */
+    /* ---------- TX0 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX0IF) {
 
         /* Erase field before new information */
@@ -273,12 +308,12 @@ static void mcp2515net_isr(netdev_t *netdev)
         netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
     }
 
-    /* Process TX1 Interrupt */
+    /* ---------- TX1 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX1IF) {
 
     }
 
-    /* Process TX2 Interrupt */
+    /* ---------- TX2 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX2IF) {
 
     }

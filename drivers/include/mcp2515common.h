@@ -183,19 +183,19 @@ extern "C" {
 #define MCP2515_BFPCTRL_B0BFS 0x10
 #define MCP2515_BFPCTRL_B1BFS 0x20
 
-#define MCP2515_TXRTSCTRL_B0RTSM 0x01
-#define MCP2515_TXRTSCTRL_B1RTSM 0x02
-#define MCP2515_TXRTSCTRL_B2RTSM 0x04
-#define MCP2515_TXRTSCTRL_B0RTS 0x08
-#define MCP2515_TXRTSCTRL_B1RTS 0x10
-#define MCP2515_TXRTSCTRL_B2RTS 0x20
+#define MCP2515_TXRTSCTRL_B0RTSM            0x01
+#define MCP2515_TXRTSCTRL_B1RTSM            0x02
+#define MCP2515_TXRTSCTRL_B2RTSM            0x04
+#define MCP2515_TXRTSCTRL_B0RTS             0x08
+#define MCP2515_TXRTSCTRL_B1RTS             0x10
+#define MCP2515_TXRTSCTRL_B2RTS             0x20
 
-#define MCP2515_CANSTAT_ICOD0 0x02
-#define MCP2515_CANSTAT_ICOD1 0x04
-#define MCP2515_CANSTAT_ICOD2 0x08
-#define MCP2515_CANSTAT_OPMOD0 0x20
-#define MCP2515_CANSTAT_OPMOD1 0x40
-#define MCP2515_CANSTAT_OPMOD2  0x80
+#define MCP2515_CANSTAT_ICOD0               0x02
+#define MCP2515_CANSTAT_ICOD1               0x04
+#define MCP2515_CANSTAT_ICOD2               0x08
+#define MCP2515_CANSTAT_OPMOD0              0x20
+#define MCP2515_CANSTAT_OPMOD1              0x40
+#define MCP2515_CANSTAT_OPMOD2              0x80
 
 #define MCP2515_CANSTAT_ICOD_MASK 0x0E
 
@@ -207,17 +207,17 @@ extern "C" {
 #define MCP2515_CANSTAT_OPMOD_LISTEN_ONLY   (MCP2515_CANSTAT_OPMOD1 | \
                                              MCP2515_CANSTAT_OPMOD0)
 
-#define MCP2515_CANCTRL_CLKPRE0 0x01
-#define MCP2515_CANCTRL_CLKPRE1 0x02
-#define MCP2515_CANCTRL_CLKEN   0x04
-#define MCP2515_CANCTRL_OSM     0x08
-#define MCP2515_CANCTRL_ABAT    0x10
-#define MCP2515_CANCTRL_REQOP0  0x20
-#define MCP2515_CANCTRL_REQOP1  0x40
-#define MCP2515_CANCTRL_REQOP2  0x80
+#define MCP2515_CANCTRL_CLKPRE0             0x01
+#define MCP2515_CANCTRL_CLKPRE1             0x02
+#define MCP2515_CANCTRL_CLKEN               0x04
+#define MCP2515_CANCTRL_OSM                 0x08
+#define MCP2515_CANCTRL_ABAT                0x10
+#define MCP2515_CANCTRL_REQOP0              0x20
+#define MCP2515_CANCTRL_REQOP1              0x40
+#define MCP2515_CANCTRL_REQOP2              0x80
 
-#define MCP2515_CANCTRL_CLKPRE_MASK (MCP2515_CANCTRL_CLKPRE1 | \
-                                     MCP2515_CANCTRL_CLKPRE0)
+#define MCP2515_CANCTRL_CLKPRE_MASK         (MCP2515_CANCTRL_CLKPRE1 | \
+                                             MCP2515_CANCTRL_CLKPRE0)
 
 #define MCP2515_CANCTRL_REQOP_MASK          0xE0
 #define MCP2515_CANCTRL_REQOP_CONFIGURATION MCP2515_CANCTRL_REQOP2
@@ -227,56 +227,61 @@ extern "C" {
 #define MCP2515_CANCTRL_REQOP_LISTEN_ONLY   (MCP2515_CANCTRL_REQOP1 | \
                                              MCP2515_CANCTRL_REQOP0)
 
-#define MCP2515_CNF3_PHSEG20    0x01
-#define MCP2515_CNF3_PHSEG21    0x02
-#define MCP2515_CNF3_PHSEG22    0x04
-#define MCP2515_CNF3_WAKFIL     0x40
-#define MCP2515_CNF3_SOF        0x80
+#define MCP2515_CNF3_PHSEG20                0x01
+#define MCP2515_CNF3_PHSEG21                0x02
+#define MCP2515_CNF3_PHSEG22                0x04
+#define MCP2515_CNF3_WAKFIL                 0x40
+#define MCP2515_CNF3_WAKFIL_MASK            0x01
+#define MCP2515_CNF3_WAKFIL_SHIFT           0x06
+#define MCP2515_CNF3_SOF                    0x80
+#define MCP2515_CNF3_SOF_MASK               0x01
+#define MCP2515_CNF3_SOF_SHIFT              0x07
 
-#define MCP2515_CNF3_PHSEG_MASK 0x07
+#define MCP2515_CNF3_PHSEG2_MASK            0x07
 
-#define MCP2515_CNF2_PRSEG0     0x01
-#define MCP2515_CNF2_PRSEG1     0x02
-#define MCP2515_CNF2_PRSEG2     0x04
-#define MCP2515_CNF2_PHSEG10    0x08
-#define MCP2515_CNF2_PHSEG11    0x10
-#define MCP2515_CNF2_PHSEG12    0x20
-#define MCP2515_CNF2_SAM        0x40
-#define MCP2515_CNF2_BTLMODE    0x80
+#define MCP2515_CNF2_PRSEG0                 0x01
+#define MCP2515_CNF2_PRSEG1                 0x02
+#define MCP2515_CNF2_PRSEG2                 0x04
+#define MCP2515_CNF2_PHSEG10                0x08
+#define MCP2515_CNF2_PHSEG11                0x10
+#define MCP2515_CNF2_PHSEG12                0x20
+#define MCP2515_CNF2_SAM                    0x40
+#define MCP2515_CNF2_BTLMODE                0x80
 
-#define MCP2515_CNF2_PRSEG_MASK 0x07
-#define MCP2515_CNF2_PHSEG_MASK 0x38
+#define MCP2515_CNF2_PRSEG_MASK             0x07
+#define MCP2515_CNF2_PHSEG1_MASK            0x07
+#define MCP2515_CNF2_PHSEG1_SHIFT           0x03
 
-#define MCP2515_CNF1_BRP0       0x01
-#define MCP2515_CNF1_BRP1       0x02
-#define MCP2515_CNF1_BRP2       0x04
-#define MCP2515_CNF1_BRP3       0x08
-#define MCP2515_CNF1_BRP4       0x10
-#define MCP2515_CNF1_BRP5       0x20
-#define MCP2515_CNF1_SJW0       0x40
-#define MCP2515_CNF1_SJW1       0x80
+#define MCP2515_CNF1_BRP0                   0x01
+#define MCP2515_CNF1_BRP1                   0x02
+#define MCP2515_CNF1_BRP2                   0x04
+#define MCP2515_CNF1_BRP3                   0x08
+#define MCP2515_CNF1_BRP4                   0x10
+#define MCP2515_CNF1_BRP5                   0x20
+#define MCP2515_CNF1_SJW0                   0x40
+#define MCP2515_CNF1_SJW1                   0x80
 
-#define MCP2515_CNF1_BRP_MASK   0x3F
-#define MCP2515_CNF1_SJW_MASK   0x3
-#define MCP2515_CNF1_SJW_SHIFT  0x6
+#define MCP2515_CNF1_BRP_MASK               0x3F
+#define MCP2515_CNF1_SJW_MASK               0x03
+#define MCP2515_CNF1_SJW_SHIFT              0x06
 
-#define MCP2515_CANINTE_RX0IE   0x01
-#define MCP2515_CANINTE_RX1IE   0x02
-#define MCP2515_CANINTE_TX0IE   0x04
-#define MCP2515_CANINTE_TX1IE   0x08
-#define MCP2515_CANINTE_TX2IE   0x10
-#define MCP2515_CANINTE_ERRIE   0x20
-#define MCP2515_CANINTE_WAKIE   0x40
-#define MCP2515_CANINTE_MERRE   0x80
+#define MCP2515_CANINTE_RX0IE               0x01
+#define MCP2515_CANINTE_RX1IE               0x02
+#define MCP2515_CANINTE_TX0IE               0x04
+#define MCP2515_CANINTE_TX1IE               0x08
+#define MCP2515_CANINTE_TX2IE               0x10
+#define MCP2515_CANINTE_ERRIE               0x20
+#define MCP2515_CANINTE_WAKIE               0x40
+#define MCP2515_CANINTE_MERRE               0x80
 
-#define MCP2515_CANINTF_RX0IF   0x01
-#define MCP2515_CANINTF_RX1IF   0x02
-#define MCP2515_CANINTF_TX0IF   0x04
-#define MCP2515_CANINTF_TX1IF   0x08
-#define MCP2515_CANINTF_TX2IF   0x10
-#define MCP2515_CANINTF_ERRIF   0x20
-#define MCP2515_CANINTF_WAKIF   0x40
-#define MCP2515_CANINTF_MERRF   0x80
+#define MCP2515_CANINTF_RX0IF               0x01
+#define MCP2515_CANINTF_RX1IF               0x02
+#define MCP2515_CANINTF_TX0IF               0x04
+#define MCP2515_CANINTF_TX1IF               0x08
+#define MCP2515_CANINTF_TX2IF               0x10
+#define MCP2515_CANINTF_ERRIF               0x20
+#define MCP2515_CANINTF_WAKIF               0x40
+#define MCP2515_CANINTF_MERRF               0x80
 /** @} */
 
 /**

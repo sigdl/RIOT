@@ -27,6 +27,7 @@
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
 #include "board.h"
+#include "mcp2515common.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -64,7 +65,13 @@ extern "C" {
  *  
  */
 
-/*      -----  General Parameters  -----        */
+/*      -----  Control Parameters  -----        */
+#ifndef MCP2515NET_REG0_WAKFIL      /* WAKFIL signal bit */
+#define MCP2515NET_REG0_WAKFIL      1       /* Wakeup filter enabled            */
+#endif
+#ifndef MCP2515NET_REG0_SOF         /* SOF signal bit */
+#define MCP2515NET_REG0_SOF         1       /* CLKOUT enabled for SOF           */
+#endif
 
 /*       -----  Timing Parameters  -----        */
 #ifndef MCP2515NET_TIMING0_NBR      /* Nominal Bit Rate in bits/sec */
@@ -118,13 +125,12 @@ static uint32_t brp_0;
                                       .r_bitrate    = &r_bitrate_0, \
                                       .brp          = &brp_0, \
                                       .clock        = MCP2515NET_TIMING0_CLOCK, \
-                                      .prop         = MCP2515NET_TIMING0_PROP, \
-                                      .ps1          = MCP2515NET_TIMING0_PS1, \
-                                      .ps2          = MCP2515NET_TIMING0_PS2, \
+                                      .prseg        = MCP2515NET_TIMING0_PROP, \
+                                      .phseg1       = MCP2515NET_TIMING0_PS1, \
+                                      .phseg2       = MCP2515NET_TIMING0_PS2, \
                                       .sjw          = MCP2515NET_TIMING0_SJW \
                                     }
 #endif
-
 #ifndef MCP2515NET_IFACE0
 #define MCP2515NET_IFACE0           { \
                                       .spi      = MCP2515NET_IFACE0_SPI, \
@@ -137,12 +143,18 @@ static uint32_t brp_0;
 #endif
 #ifndef MCP2515NET_PARAMS0
 #define MCP2515NET_PARAMS0          { \
-                                      .timing       = MCP2515NET_TIMING0, \
-                                      .iface        = MCP2515NET_IFACE0, \
+                                      .timing   = MCP2515NET_TIMING0, \
+                                      .iface    = MCP2515NET_IFACE0, \
                                     }
 #endif
-
-
+#ifndef MCP2515NET_REG0
+#define MCP2515NET_REG0             { \
+                                      .cnf3     = ((MCP2515NET_REG0_WAKFIL & MCP2515_CNF3_WAKFIL_MASK) \
+                                                                          << MCP2515_CNF3_WAKFIL_SHIFT ) | \
+                                                  ((MCP2515NET_REG0_SOF & MCP2515_CNF3_SOF_MASK) \
+                                                                       << MCP2515_CNF3_SOF_SHIFT), \
+                                    }
+#endif
 
 /**
  * @name    Array of ALL Interfaces' parameters
@@ -154,6 +166,16 @@ static uint32_t brp_0;
                                     }
 #endif
 
+/**
+ * @name    Array of ALL Interfaces' control parameters
+ * @{
+ */
+#ifndef MCP2515NET_REGS
+#define MCP2515NET_REGS             { \
+                                      MCP2515NET_REG0, \
+                                    }
+#endif
+
 /** @} */
 
 /*------------------------------------------------------------------------------*
@@ -161,6 +183,7 @@ static uint32_t brp_0;
  *------------------------------------------------------------------------------*/
 
 static const socketcan_params_t mcp2515net_params[] = MCP2515NET_PARAMS;
+static       mcp2515net_regs_t  regs[]              = MCP2515NET_REGS;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *

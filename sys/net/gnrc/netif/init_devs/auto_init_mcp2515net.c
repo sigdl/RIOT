@@ -58,7 +58,6 @@
  * @{
  */
 static mcp2515net_t         dev[MCP2515NET_NUM];
-static mcp2515net_regs_t    regs[MCP2515NET_NUM];
 static gnrc_netif_t         _netif[MCP2515NET_NUM];
 
 /** @} */

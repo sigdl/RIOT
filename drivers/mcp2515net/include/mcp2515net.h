@@ -50,7 +50,9 @@
  */
 typedef struct {
     uint8_t canctrl;
-
+    uint8_t cnf1;
+    uint8_t cnf2;
+    uint8_t cnf3;
 } mcp2515net_regs_t;
 
 /**
@@ -75,9 +77,9 @@ typedef struct {
     mutex_t                   lock;     /* Exclusive access mutex               */
     uint8_t                   flags;    /* Flags for RXB number, etc            */
     const socketcan_params_t *params;   /* CAN config                           */
+    mcp2515net_regs_t        *regs;     /* MCP2515 registers                    */
     can_frame_t               rxb[2];   /* RX Buffers                           */
     can_frame_t               txb[3];   /* TX Buffers                           */
-    mcp2515net_regs_t        *regs;     /* MCP2515 registers                    */
     netdev_t                  netdev;   /* Netdev config                        */
 } mcp2515net_t;
 
