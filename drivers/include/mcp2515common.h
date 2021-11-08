@@ -297,12 +297,12 @@ extern "C" {
  * @name MCP2515 Transmit and receive flags
  * @{
  */
-#define MCP2515_TXBCTRL_TXP0                0x01
-#define MCP2515_TXBCTRL_TXP1                0x02
-#define MCP2515_TXBCTRL_TXREQ               0x08
-#define MCP2515_TXBCTRL_TXERR               0x10
-#define MCP2515_TXBCTRL_MLOA                0x20
-#define MCP2515_TXBCTRL_ABTF                0x40
+#define MCP2515_TXBCTRL_TXP0                    0x01
+#define MCP2515_TXBCTRL_TXP1                    0x02
+#define MCP2515_TXBCTRL_TXREQ                   0x08
+#define MCP2515_TXBCTRL_TXERR                   0x10
+#define MCP2515_TXBCTRL_MLOA                    0x20
+#define MCP2515_TXBCTRL_ABTF                    0x40
 
 #define MCP2515_RXB0CTRL_FILHIT0                0x01
 #define MCP2515_RXB0CTRL_BUKT1                  0x02
@@ -352,6 +352,14 @@ extern "C" {
 #define MCP2515_RXBUF_RXB0D0                0x02
 #define MCP2515_RXBUF_RXB1SIDH              0x04
 #define MCP2515_RXBUF_RXB1D0                0x06
+#define MCP2515_RXBUF_SHIFT                 0x02 /* n bit position              */
+#define MCP2515_RXBUF_SIDH                  0x00
+#define MCP2515_RXBUF_SIDL                  0x01
+#define MCP2515_RXBUF_EID8                  0x02
+#define MCP2515_RXBUF_EID0                  0x03
+#define MCP2515_RXBUF_DLC                   0x04
+
+
 /** @} */
 
 /**
@@ -414,6 +422,7 @@ extern "C" {
  * {
  */
 #define MCP2515_STUFFING                    0xFF
+#define MCP2515_RXB_BYTES                   13
 /** @} */
 
 /*------------------------------------------------------------------------------*

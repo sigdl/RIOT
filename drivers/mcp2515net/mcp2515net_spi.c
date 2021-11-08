@@ -170,10 +170,10 @@ void mcp2515_spi_transf(mcp2515net_t *dev,
  * @return                  0 on success
  * @return                  <0 on error
  */
-int mcp2515_spi_read(mcp2515net_t *dev,
-                     uint8_t addr,
-                     uint8_t *buf,
-                     unsigned int len)
+int mcp2515_spi_readrxb(mcp2515net_t *dev,
+                        uint8_t addr,
+                        uint8_t *buf,
+                        unsigned int len)
 {
     spi_acquire(dev->params->iface.spi,
                 dev->params->iface.cs_pin,
@@ -184,7 +184,8 @@ int mcp2515_spi_read(mcp2515net_t *dev,
     spi_transfer_byte(dev->params->iface.spi,
                       dev->params->iface.cs_pin,
                       true,
-                      MCP2515_SPI_READ
+                      MCP2515_SPI_READ_RXBUF |
+                      ((dev->flags & MCP2515NET_FLAGRXB_MASK) << MCP2515_RXBUF_SHIFT)
                      );
 
     spi_transfer_regs(dev->params->iface.spi,
@@ -240,5 +241,20 @@ int mcp2515_spi_bitmod(mcp2515net_t *dev,
 
     spi_release(dev->params->iface.spi);
 
+    return 0;
+}
+
+/**
+ * @brief Get MCP2515 interrupt flags
+ *
+ * @param[in]  dev          device descriptor
+ *
+ * @return                  0 on success
+ * @return                  <0 on error
+ */
+int mcp2515_spi_getint(mcp2515net_t *dev)
+{
+    dev++;
+    
     return 0;
 }

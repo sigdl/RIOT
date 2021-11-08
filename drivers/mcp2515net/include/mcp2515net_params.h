@@ -64,6 +64,28 @@ extern "C" {
  *  
  */
 
+/*      -----  General Parameters  -----        */
+
+/*       -----  Timing Parameters  -----        */
+#ifndef MCP2515NET_TIMING0_NBR      /* Nominal Bit Rate in bits/sec */
+#define MCP2515NET_TIMING0_NBR      500000
+#endif
+#ifndef MCP2515NET_TIMING0_CLOCK    /* Clock for CAN device in Hz */
+#define MCP2515NET_TIMING0_CLOCK    (16000000ul)
+#endif
+#ifndef MCP2515NET_TIMING0_PROP     /* Propagation segment in TQs */
+#define MCP2515NET_TIMING0_PROP     2
+#endif
+#ifndef MCP2515NET_TIMING0_PS1      /* Phase segment 1 in TQs */
+#define MCP2515NET_TIMING0_PS1      7
+#endif
+#ifndef MCP2515NET_TIMING0_PS2      /* Phase segment 2 in TQs */
+#define MCP2515NET_TIMING0_PS2      6
+#endif
+#ifndef MCP2515NET_TIMING0_SJW      /*  */
+#define MCP2515NET_TIMING0_SJW      1
+#endif
+
  /*     ----- Interface Parameters -----     */
 #ifndef MCP2515NET_IFACE0_SPI
 #define MCP2515NET_IFACE0_SPI       (SPI_DEV(0))
@@ -84,41 +106,12 @@ extern "C" {
 #define MCP2515NET_IFACE0_RESET     (GPIO_PIN(0, 2))
 #endif
 
-/*       -----  CAN Parameters  -----        */
-#ifndef MCP2515NET_TIMING0_NBR      /* Nominal Bit Rate in bits/sec */
-#define MCP2515NET_TIMING0_NBR      500000
-#endif
-#ifndef MCP2515NET_TIMING0_CLOCK    /* Clock for CAN device in Hz */
-#define MCP2515NET_TIMING0_CLOCK    (16000000ul)
-#endif
-#ifndef MCP2515NET_TIMING0_PROP     /* Propagation segment in TQs */
-#define MCP2515NET_TIMING0_PROP     2
-#endif
-#ifndef MCP2515NET_TIMING0_PS1      /* Phase segment 1 in TQs */
-#define MCP2515NET_TIMING0_PS1      7
-#endif
-#ifndef MCP2515NET_TIMING0_PS2      /* Phase segment 2 in TQs */
-#define MCP2515NET_TIMING0_PS2      6
-#endif
-#ifndef MCP2515NET_TIMING0_SJW      /*  */
-#define MCP2515NET_TIMING0_SJW      1
-#endif
-
 /* Variable parameters that must be in RAM */
-static uint32_t             nom_bitrate_0;
-static uint32_t             r_bitrate_0;
-static uint32_t             brp_0;
+static uint32_t nom_bitrate_0;
+static uint32_t r_bitrate_0;
+static uint32_t brp_0;
 
-#ifndef MCP2515NET_IFACE0
-#define MCP2515NET_IFACE0           { \
-                                      .spi      = MCP2515NET_IFACE0_SPI, \
-                                      .spi_mode = MCP2515NET_IFACE0_SPI_MODE, \
-                                      .spi_clk  = MCP2515NET_IFACE0_SPI_CLK, \
-                                      .cs_pin   = MCP2515NET_IFACE0_CS, \
-                                      .int_pin  = MCP2515NET_IFACE0_INT, \
-                                      .rst_pin  = MCP2515NET_IFACE0_RESET \
-                                    }
-#endif
+
 #ifndef MCP2515NET_TIMING0
 #define MCP2515NET_TIMING0          { \
                                       .nom_bitrate  = &nom_bitrate_0, \
@@ -131,10 +124,21 @@ static uint32_t             brp_0;
                                       .sjw          = MCP2515NET_TIMING0_SJW \
                                     }
 #endif
+
+#ifndef MCP2515NET_IFACE0
+#define MCP2515NET_IFACE0           { \
+                                      .spi      = MCP2515NET_IFACE0_SPI, \
+                                      .spi_mode = MCP2515NET_IFACE0_SPI_MODE, \
+                                      .spi_clk  = MCP2515NET_IFACE0_SPI_CLK, \
+                                      .cs_pin   = MCP2515NET_IFACE0_CS, \
+                                      .int_pin  = MCP2515NET_IFACE0_INT, \
+                                      .rst_pin  = MCP2515NET_IFACE0_RESET \
+                                    }
+#endif
 #ifndef MCP2515NET_PARAMS0
 #define MCP2515NET_PARAMS0          { \
-                                      .timing   = MCP2515NET_TIMING0, \
-                                      .iface    = MCP2515NET_IFACE0, \
+                                      .timing       = MCP2515NET_TIMING0, \
+                                      .iface        = MCP2515NET_IFACE0, \
                                     }
 #endif
 

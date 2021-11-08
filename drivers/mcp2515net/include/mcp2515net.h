@@ -35,6 +35,12 @@
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
  *------------------------------------------------------------------------------*/
+#define MCP2515NET_FLAGRXB_MASK     0x1
+#define MCP2515NET_FLAGRXB_1        0x1
+
+#define MCP2515NET_FLAGTXB_MASK     0x3
+#define MCP2515NET_FLAGTXB_SHIFT    0x1
+#define MCP2515NET_FLAGTXB_1        0x1
 
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
@@ -49,10 +55,28 @@ typedef struct {
 
 /**
  * @brief MCP2515 general configuration descriptor
+ *
+ * Flags 
+ *
+ * 7654 3210
+ *       ttr
+ *
+ * r = Receive buffer
+ * 0   RXB0
+ * 1   RXB1
+ *
+ * tt = Trasmit buffer
+ * 00   TXB0
+ * 01   TXB1
+ * 10   TXB2
+ *
  */
 typedef struct {
     mutex_t                   lock;     /* Exclusive access mutex               */
+    uint8_t                   flags;    /* Flags for RXB number, etc            */
     const socketcan_params_t *params;   /* CAN config                           */
+    can_frame_t               rxb[2];   /* RX Buffers                           */
+    can_frame_t               txb[3];   /* TX Buffers                           */
     mcp2515net_regs_t        *regs;     /* MCP2515 registers                    */
     netdev_t                  netdev;   /* Netdev config                        */
 } mcp2515net_t;

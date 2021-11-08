@@ -34,13 +34,13 @@
 #include "mcp2515net.h"
 #include "mcp2515net_spi.h"
 
-#define ENABLE_DEBUG    0
+#define ENABLE_DEBUG            0
 #include "debug.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
  *------------------------------------------------------------------------------*/
-#define TRANSF_BUFFER_SIZE     5
+#define TRANSF_BUFFER_SIZE      5
 
 /*------------------------------------------------------------------------------*
  *                                 Private Types                                *
@@ -107,7 +107,7 @@ static int mcp2515net_init(netdev_t *netdev)
     /* Initialize INT */
     resp = gpio_init_int(dev->params->iface.int_pin,
                          GPIO_IN,
-                         GPIO_RISING,
+                         GPIO_FALLING,
                          mcp2515net_irq_h,
                          dev
                         );
@@ -191,7 +191,161 @@ static void mcp2515net_irq_h(void *arg)
  */
 static void mcp2515net_isr(netdev_t *netdev)
 {
-    netdev++;
+    mcp2515net_t *dev = container_of(netdev, mcp2515net_t, netdev);
+    uint8_t irq_flags;
+    uint8_t in_buf[TRANSF_BUFFER_SIZE];
+    uint8_t out_buf[TRANSF_BUFFER_SIZE];
+
+    /* Read interrupt flags */
+    out_buf[0] = MCP2515_SPI_READ;
+    out_buf[1] = MCP2515_CANINTF;
+    out_buf[2] = MCP2515_STUFFING;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       3
+                      );
+    irq_flags = out_buf[2];
+
+    /* Reset interrupt flags */
+    out_buf[0] = MCP2515_SPI_BITMOD;
+    out_buf[1] = MCP2515_CANINTF;
+    out_buf[2] = irq_flags;
+    out_buf[2] = 0;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       4
+                      );
+
+    /* Process Wake Interrupt */
+    if( irq_flags & MCP2515_CANINTF_WAKIF) {
+        DEBUG("[MCP2515net] isr: wake up\n");
+        netdev->event_callback(netdev, NETDEV_EVENT_WAKEUP);
+    }
+
+    /* Process Error Interrupt */
+    if( irq_flags & MCP2515_CANINTF_ERRIF) {
+
+    }
+
+    /* Process Message Error Interrupt */
+    if( irq_flags & MCP2515_CANINTF_MERRF) {
+
+    }
+
+    /* Process RX0 Interrupt */
+    if( irq_flags & MCP2515_CANINTF_RX0IF) {
+        DEBUG("[MCP2515NET] isr: RXB0 frame\n");
+
+        /* Erase field before new information */
+        dev->flags &= ~MCP2515NET_FLAGRXB_MASK;
+
+        /* Since RXB0 is value 0, nothing extra to be done */
+
+        /* Event callback */
+        netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+    }
+
+    /* Process RX1 Interrupt */
+    if( irq_flags & MCP2515_CANINTF_RX1IF) {
+        DEBUG("[MCP2515NET] isr: RXB1 frame\n");
+
+        /* Erase field before new information */
+        dev->flags &= ~MCP2515NET_FLAGRXB_MASK; 
+
+        /* Flag RXB1 */
+        dev->flags |= 1;
+        
+        /* Event callback */
+        netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
+    }
+
+    /* Process TX0 Interrupt */
+    if( irq_flags & MCP2515_CANINTF_TX0IF) {
+
+        /* Erase field before new information */
+        dev->flags &= ~(MCP2515NET_FLAGTXB_MASK << MCP2515NET_FLAGTXB_SHIFT); 
+
+        /* Since TXB0 is value 0, nothing extra to be done */
+
+        /* Event callback */
+        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
+    }
+
+    /* Process TX1 Interrupt */
+    if( irq_flags & MCP2515_CANINTF_TX1IF) {
+
+    }
+
+    /* Process TX2 Interrupt */
+    if( irq_flags & MCP2515_CANINTF_TX2IF) {
+
+    }
+}
+
+/**
+ * @brief MCP2515 SocketCAN driver receive function
+ *
+ * 
+ *
+ * @param[in]  dev          device descriptor
+ *
+ * @return                  0 on success
+ * @return                  <0 on error
+ */
+static int mcp2515net_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
+{
+    mcp2515net_t *dev = container_of(netdev, mcp2515net_t, netdev);
+    uint8_t buf_num;
+    uint8_t in_buf[MCP2515_RXB_BYTES + 1];
+    uint8_t out_buf[MCP2515_RXB_BYTES + 1];
+
+    (void)buf;
+    (void)max_len;
+    (void)info;
+
+    /* Obtain buffer number to work on */
+    buf_num = (dev->flags & MCP2515NET_FLAGRXB_MASK);
+
+    /* Construct instruction according to buffer number */
+    out_buf[0] = MCP2515_SPI_READ_RXBUF |
+                 (buf_num << MCP2515_RXBUF_SHIFT);
+
+    /* Read buffer */
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       MCP2515_RXB_BYTES + 1
+                      );
+
+    /* If it's an extended frame */
+    if (in_buf[MCP2515_RXBUF_SIDL + 1] & MCP2515_RX_IDE) {
+
+        /* REG+1 because buffer is shifted due to byte 0 being the instruction */
+        dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 21) +
+                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) << 13) +
+                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0x03) << 16) +
+                               ((uint32_t)in_buf[MCP2515_RXBUF_EID8 + 1] << 8) +
+                                          in_buf[MCP2515_RXBUF_EID0 + 1];
+        dev->rxb[buf_num].id |= CAN_FLAG_EFF;
+    }
+
+    /* If it's an standard frame */
+    else {
+
+        /* REG+1 because buffer is shifted due to byte 0 being the instruction */
+        dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 3) +
+                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) >> 5);
+    }
+
+    /* Get DLC field */
+    dev->rxb[buf_num].dlc = in_buf[MCP2515_RXBUF_DLC + 1];
+
+    /* Get payload */
+    memcpy(dev->rxb[buf_num].data, in_buf + 6, dev->rxb[buf_num].dlc);
+
+    return 0;
 }
 
 /**
@@ -208,27 +362,6 @@ static int mcp2515net_send(netdev_t *netdev, const iolist_t *iolist)
 {
     netdev++;
     iolist++;
-
-    return 0;
-}
-
-/**
- * @brief MCP2515 SocketCAN driver receive function
- *
- * 
- *
- * @param[in]  dev          device descriptor
- *
- * @return                  0 on success
- * @return                  <0 on error
- */
-static int mcp2515net_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
-{
-
-    netdev++;
-    buf++;
-    max_len++;
-    info++;
 
     return 0;
 }
@@ -272,7 +405,6 @@ static int mcp2515net_set(netdev_t *netdev, netopt_t opt, const void *value, siz
 
     return 0;
 }
-
 
 /*------------------------------------------------------------------------------*
  *                                 Public Data                                  *
