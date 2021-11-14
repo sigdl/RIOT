@@ -39,9 +39,9 @@
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
 void mcp2515_spi_reset(mcp2515net_t *dev);
-int  mcp2515_spi_test(mcp2515net_t *dev);
-int  mcp2515_spi_read(mcp2515net_t *dev, uint8_t addr, uint8_t *buf, unsigned int len);
-int  mcp2515_spi_bitmod(mcp2515net_t *dev, uint8_t reg, uint8_t mask, uint8_t value);
 void mcp2515_spi_transf(mcp2515net_t *dev, uint8_t *out, uint8_t *in, uint16_t len);
+int  mcp2515_spi_bitmod(mcp2515net_t *dev, uint8_t reg, uint8_t mask, uint8_t value);
+void mcp2515_spi_toggleclk(mcp2515net_t *dev);
+void mcp2515_spi_setoutput(mcp2515net_t *dev, mcp2515net_outputs_t output, mcp2515net_outact_t action);
 
 #endif /* MCP2515NET_SPI_H */

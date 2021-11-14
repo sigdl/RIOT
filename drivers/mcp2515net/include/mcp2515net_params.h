@@ -113,6 +113,13 @@ extern "C" {
 #define MCP2515NET_IFACE0_RESET     (GPIO_PIN(0, 2))
 #endif
 
+ /*     ----- Operation Parameters -----     */
+#ifndef MCP2515NET_OP0_INITMODE     
+#define MCP2515NET_OP0_INITMODE     MCP2515_CANCTRL_REQOP_NORMAL
+#endif
+
+
+
 /* Variable parameters that must be in RAM */
 static uint32_t nom_bitrate_0;
 static uint32_t r_bitrate_0;
@@ -149,6 +156,9 @@ static uint32_t brp_0;
 #endif
 #ifndef MCP2515NET_REG0
 #define MCP2515NET_REG0             { \
+                                      .canctrl  = MCP2515_CANCTRL_RESET | \
+                                                  ((MCP2515NET_OP0_INITMODE & MCP2515_CANCTRL_REQOP_MASK) \
+                                                                           << MCP2515_CANCTRL_REQOP_SHIFT ), \
                                       .cnf3     = ((MCP2515NET_REG0_WAKFIL & MCP2515_CNF3_WAKFIL_MASK) \
                                                                           << MCP2515_CNF3_WAKFIL_SHIFT ) | \
                                                   ((MCP2515NET_REG0_SOF & MCP2515_CNF3_SOF_MASK) \

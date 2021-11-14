@@ -35,16 +35,32 @@
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
  *------------------------------------------------------------------------------*/
-#define MCP2515NET_FLAGRXB_MASK     0x1
-#define MCP2515NET_FLAGRXB_1        0x1
-
-#define MCP2515NET_FLAGTXB_MASK     0x3
-#define MCP2515NET_FLAGTXB_SHIFT    0x1
-#define MCP2515NET_FLAGTXB_1        0x1
+#define MCP2515NET_INT_RXB0         0x01
+#define MCP2515NET_INT_RXB1         0x02
+#define MCP2515NET_INT_TXB0         0x04
+#define MCP2515NET_INT_TXB1         0x08
+#define MCP2515NET_INT_TXB2         0x10
 
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
+/**
+ * @brief MCP2515 ouput pins enum
+ */
+typedef enum {
+    MCP2515_RX0BF,
+    MCP2515_RX1BF
+} mcp2515net_outputs_t;
+
+/**
+ * @brief MCP2515 ouput action enum
+ */
+typedef enum {
+    MCP2515_OUTSET,
+    MCP2515_OUTRESET,
+    MCP2515_TOGGLE
+} mcp2515net_outact_t;
+
 /**
  * @brief MCP2515 registers descriptor
  */
@@ -53,6 +69,7 @@ typedef struct {
     uint8_t cnf1;
     uint8_t cnf2;
     uint8_t cnf3;
+    uint8_t bfpctrl;
 } mcp2515net_regs_t;
 
 /**
@@ -61,16 +78,14 @@ typedef struct {
  * Flags 
  *
  * 7654 3210
- *       ttr
+ *    t ttrr
+ *    2 1010
  *
- * r = Receive buffer
- * 0   RXB0
- * 1   RXB1
- *
- * tt = Trasmit buffer
- * 00   TXB0
- * 01   TXB1
- * 10   TXB2
+ * r0   RXB0
+ * r1   RXB1
+ * t0   TXB0
+ * t1   TXB1
+ * t2   TXB2
  *
  */
 typedef struct {

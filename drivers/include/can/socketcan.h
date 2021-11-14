@@ -57,6 +57,36 @@ extern "C" {
 #define CAN_ERR_MASK            (0x1FFFFFFFU) /**< omit EFF, RTR, ERR flags     */
 /** @} */
 
+/* CAN frame flags
+ *
+ * 7654 3210
+ * dddd   ri
+ *
+ *  i = ID Extension
+ *  0   Standard frame
+ *  1   Extended frame
+ *
+ *  r = Remote Trasmit Request
+ *  0   data frame
+ *  1   remote frame
+ *
+ *  dddd = Data Length Code
+ *  0 - 8
+ *
+ */
+#define CAN_FLAG_IDE_MASK       0x01
+#define CAN_FLAG_IDE_SHIFT      0x00
+#define CAN_FLAG_IDE_STD        0x00
+#define CAN_FLAG_IDE_EXT        0x01
+
+#define CAN_FLAG_RTR_MASK       0x01
+#define CAN_FLAG_RTR_SHIFT      0x01
+#define CAN_FLAG_RTR_DAT        0x00
+#define CAN_FLAG_RTR_REM        0x01
+
+#define CAN_FLAG_DLC_MASK       0x0F
+#define CAN_FLAG_DLC_SHIFT      0x04
+
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
@@ -102,20 +132,24 @@ typedef struct {
  * @brief   Definition for CAN parameters struct
  */
 typedef struct {
-    uint8_t             frame_type;  /**< CAN frame type                        */
     socketcan_timing_t  timing; /**< CAN timing parameters                      */
     socketcan_iface_t   iface;  /**< CAN interface parameters                   */
 } socketcan_params_t;
 
 /**
- * @brief   Definition for CAN frame struct
+ * @brief   Definition for CAN identification struct
  */
 typedef struct {
-    uint32_t id;                /**< CAN_ID + EFF/RTR/ERR flags                 */
-    uint8_t  dlc;               /**< Payload length in bytes                    */
-    uint8_t  __pad;             /**< padding                                    */
-    uint8_t  __res0;            /**< reserved / padding                         */
-    uint8_t  __res1;            /**< reserved / padding                         */
+    uint32_t            id;     /**< Full CAN ID                                */
+} can_id_t;
+
+/**
+ * @brief   Definition for CAN frame struct
+ *      
+ */
+typedef struct {
+    uint32_t id;                /**< CAN ID                                     */
+    uint8_t  flags;             /**< CAN frame flags                            */
     uint8_t  data[CAN_PAYLOAD] __attribute__((aligned(8)));
 } can_frame_t;
 

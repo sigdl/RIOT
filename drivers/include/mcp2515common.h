@@ -175,13 +175,13 @@ extern "C" {
  * @name MCP2515 Control Register bits
  * {
  */
-#define MCP2515_BFPCTRL_B0BFM 0x01
-#define MCP2515_BFPCTRL_B1BFM 0x02
-#define MCP2515_BFPCTRL_B0BFE 0x04
-#define MCP2515_BFPCTRL_B1BFE 0x08
+#define MCP2515_BFPCTRL_B0BFM               0x01
+#define MCP2515_BFPCTRL_B1BFM               0x02
+#define MCP2515_BFPCTRL_B0BFE               0x04
+#define MCP2515_BFPCTRL_B1BFE               0x08
 
-#define MCP2515_BFPCTRL_B0BFS 0x10
-#define MCP2515_BFPCTRL_B1BFS 0x20
+#define MCP2515_BFPCTRL_B0BFS               0x10
+#define MCP2515_BFPCTRL_B1BFS               0x20
 
 #define MCP2515_TXRTSCTRL_B0RTSM            0x01
 #define MCP2515_TXRTSCTRL_B1RTSM            0x02
@@ -215,17 +215,18 @@ extern "C" {
 #define MCP2515_CANCTRL_REQOP0              0x20
 #define MCP2515_CANCTRL_REQOP1              0x40
 #define MCP2515_CANCTRL_REQOP2              0x80
+#define MCP2515_CANCTRL_RESET               0x87    /* Reset value */
 
 #define MCP2515_CANCTRL_CLKPRE_MASK         (MCP2515_CANCTRL_CLKPRE1 | \
                                              MCP2515_CANCTRL_CLKPRE0)
 
-#define MCP2515_CANCTRL_REQOP_MASK          0xE0
-#define MCP2515_CANCTRL_REQOP_CONFIGURATION MCP2515_CANCTRL_REQOP2
+#define MCP2515_CANCTRL_REQOP_MASK          0x07
+#define MCP2515_CANCTRL_REQOP_SHIFT         0x05
+#define MCP2515_CANCTRL_REQOP_CONFIGURATION 0x04
 #define MCP2515_CANCTRL_REQOP_NORMAL        0x00
-#define MCP2515_CANCTRL_REQOP_SLEEP         MCP2515_CANCTRL_REQOP0
-#define MCP2515_CANCTRL_REQOP_LOOPBACK      MCP2515_CANCTRL_REQOP1
-#define MCP2515_CANCTRL_REQOP_LISTEN_ONLY   (MCP2515_CANCTRL_REQOP1 | \
-                                             MCP2515_CANCTRL_REQOP0)
+#define MCP2515_CANCTRL_REQOP_SLEEP         0x01
+#define MCP2515_CANCTRL_REQOP_LOOPBACK      0x02
+#define MCP2515_CANCTRL_REQOP_LISTEN_ONLY   0x03
 
 #define MCP2515_CNF3_PHSEG20                0x01
 #define MCP2515_CNF3_PHSEG21                0x02
@@ -353,6 +354,7 @@ extern "C" {
  * @name MCP2515 RX buffer id
  * {
  */
+#define MCP2515_RXBUF_NUM                   0x02 /* Number of RX buffers        */
 #define MCP2515_RXBUF_RXB0SIDH              0x00
 #define MCP2515_RXBUF_RXB0D0                0x02
 #define MCP2515_RXBUF_RXB1SIDH              0x04
@@ -371,6 +373,7 @@ extern "C" {
  * @name MCP2515 TX buffer id
  * {
  */
+#define MCP2515_TXBUF_NUM                   0x02 /* Number of TX buffers        */
 #define MCP2515_TXBUF_TXB0SIDH              0x00
 #define MCP2515_TXBUF_TXB0D0                0x01
 #define MCP2515_TXBUF_TXB1SIDH              0x02
@@ -413,13 +416,6 @@ extern "C" {
  * {
  */
 #define MCP2515_RX_IDE                      0x08
-/** @} */
-
-/**
- * @name MCP2515 reset values
- * {
- */
-#define MCP2515_RESET_CANCTRL               0x87
 /** @} */
 
 /**

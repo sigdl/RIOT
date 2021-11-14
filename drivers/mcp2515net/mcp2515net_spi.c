@@ -87,42 +87,7 @@ void mcp2515_spi_reset(mcp2515net_t *dev)
     spi_release(dev->params->iface.spi);
 
     /* Load Reset values into registers' image */
-    dev->regs->canctrl = MCP2515_RESET_CANCTRL;
-}
-
-/**
- * @brief   Signal MCP2515 driver if functional so far
- *
- * This function turns off clock output to signal that driver behaviour
- * is OK so far. Can be used wherever it's needed for fast debug purposes
- *
- * @param[in] dev           device descriptor
- */
-int mcp2515_spi_signal(mcp2515net_t *dev)
-{
-    spi_acquire(dev->params->iface.spi,
-                dev->params->iface.cs_pin,
-                dev->params->iface.spi_mode,
-                dev->params->iface.spi_clk
-               );
-
-    spi_transfer_byte(dev->params->iface.spi,
-                      dev->params->iface.cs_pin,
-                      true,
-                      MCP2515_SPI_WRITE
-                     );
-#if 0
-    spi_transfer_regs(dev->params->iface.spi,
-                      dev->params->iface.cs_pin,
-                      MCP2515_CANCTRL,
-                      NULL,
-                      (void *)buf,
-                      len
-                     );
-#endif
-    spi_release(dev->params->iface.spi);
-
-    return 0;
+    dev->regs->canctrl = MCP2515_CANCTRL_RESET;
 }
 
 /**
@@ -137,9 +102,9 @@ int mcp2515_spi_signal(mcp2515net_t *dev)
  * @return                  <0 on error
  */
 void mcp2515_spi_transf(mcp2515net_t *dev,
-                       uint8_t      *out,
-                       uint8_t      *in,
-                       uint16_t      len)
+                        uint8_t      *out,
+                        uint8_t      *in,
+                        uint16_t      len)
 {
     spi_acquire(dev->params->iface.spi,
                 dev->params->iface.cs_pin,
@@ -160,48 +125,6 @@ void mcp2515_spi_transf(mcp2515net_t *dev,
 }
 
 /**
- * @brief Read MCP2515 register @p addr
- *
- * @param[in]  dev          device descriptor
- * @param[in]  addr         register addr
- * @param[out] buf          buffer to receive register value
- * @param[in]  len          length of register value
- *
- * @return                  0 on success
- * @return                  <0 on error
- */
-int mcp2515_spi_readrxb(mcp2515net_t *dev,
-                        uint8_t addr,
-                        uint8_t *buf,
-                        unsigned int len)
-{
-    spi_acquire(dev->params->iface.spi,
-                dev->params->iface.cs_pin,
-                dev->params->iface.spi_mode,
-                dev->params->iface.spi_clk
-               );
-
-    spi_transfer_byte(dev->params->iface.spi,
-                      dev->params->iface.cs_pin,
-                      true,
-                      MCP2515_SPI_READ_RXBUF |
-                      ((dev->flags & MCP2515NET_FLAGRXB_MASK) << MCP2515_RXBUF_SHIFT)
-                     );
-
-    spi_transfer_regs(dev->params->iface.spi,
-                      dev->params->iface.cs_pin,
-                      addr,
-                      NULL,
-                      (void *)buf,
-                      len
-                     );
-
-    spi_release(dev->params->iface.spi);
-
-    return 0;
-}
-
-/**
  * @brief Modify MCP2515 register bits of @p addr
  *
  * @param[in]  dev          device descriptor
@@ -213,9 +136,9 @@ int mcp2515_spi_readrxb(mcp2515net_t *dev,
  * @return                  <0 on error
  */
 int mcp2515_spi_bitmod(mcp2515net_t *dev,
-                       uint8_t addr,
-                       uint8_t mask,
-                       uint8_t value)
+                       uint8_t       addr,
+                       uint8_t       mask,
+                       uint8_t       value)
 {
     uint8_t bytes[4];
 
@@ -245,16 +168,78 @@ int mcp2515_spi_bitmod(mcp2515net_t *dev,
 }
 
 /**
- * @brief Get MCP2515 interrupt flags
+ * @brief Toggle MCP2515 CLKOUT pin enable
  *
- * @param[in]  dev          device descriptor
+ * This function toggles clock output
  *
- * @return                  0 on success
- * @return                  <0 on error
+ * Can be used to signal that driver behaviour is OK so far wherever
+ * it's needed for fast debug purposes
+ *
+ * @param[in] dev           device descriptor
  */
-int mcp2515_spi_getint(mcp2515net_t *dev)
+void mcp2515_spi_toggleclk(mcp2515net_t *dev)
 {
-    dev++;
-    
-    return 0;
+    /* Toggle CLKEN */
+    dev->regs->canctrl ^= MCP2515_CANCTRL_CLKEN;
+
+    /* Transfer value */    
+    mcp2515_spi_bitmod(dev,
+                       MCP2515_CANCTRL,
+                       MCP2515_CANCTRL_CLKEN,
+                       dev->regs->canctrl
+                      );
+
+}
+
+/**
+ * @brief Set MCP2515 RXnBF outputs
+ *
+ * This function sets RXnBF outputs as needed
+ *
+ * @param[in] dev           device descriptor
+ * @param[in] dev           device descriptor
+ * @param[in] dev           device descriptor
+ */
+void mcp2515_spi_setoutput(mcp2515net_t         *dev,
+                           mcp2515net_outputs_t  output,
+                           mcp2515net_outact_t   action)
+{
+    uint8_t outputbit;
+
+    if(output == MCP2515_RX0BF) {
+        outputbit = MCP2515_BFPCTRL_B0BFS;
+    }
+
+    else {
+        outputbit = MCP2515_BFPCTRL_B1BFS;
+    }
+
+    /* If output must be set */
+    if(action == MCP2515_OUTSET) {
+
+        /* Set corresponding bit */
+        dev->regs->bfpctrl |= outputbit;
+    }
+
+    /* If output must be reset */
+    else if(action == MCP2515_OUTRESET) {
+
+        /* Reset corresponding bit */
+        dev->regs->bfpctrl &= ~outputbit;
+    }
+
+    /* If output must be toggled */
+    else {
+
+        /* Toggle corresponding bit */
+        dev->regs->bfpctrl ^= outputbit;
+    }
+
+    /* Transfer value */    
+    mcp2515_spi_bitmod(dev,
+                       MCP2515_BFPCTRL,
+                       outputbit,
+                       dev->regs->bfpctrl
+                      );
+
 }

@@ -128,7 +128,8 @@ static int mcp2515net_init(netdev_t *netdev)
                        in_buf,
                        3
                       );
-    if (in_buf[2] != MCP2515_RESET_CANCTRL) {
+
+    if (in_buf[2] != MCP2515_CANCTRL_RESET) {
         DEBUG("MCP2515: error communicating with device\n");
         return -1;
     }
@@ -179,6 +180,17 @@ static int mcp2515net_init(netdev_t *netdev)
                        3
                       );
 
+    /* Configure BFPCTRL register for using RXnBF pins as digital outputs */
+    dev->regs->bfpctrl |= MCP2515_BFPCTRL_B0BFE | MCP2515_BFPCTRL_B1BFE;
+    out_buf[0] = MCP2515_SPI_WRITE;
+    out_buf[1] = MCP2515_BFPCTRL;
+    out_buf[2] = dev->regs->bfpctrl;
+    mcp2515_spi_transf(dev,
+                       out_buf,
+                       in_buf,
+                       3
+                      );
+
     /* Configure masks and filters */
 
 
@@ -193,6 +205,13 @@ static int mcp2515net_init(netdev_t *netdev)
                        out_buf,
                        in_buf,
                        3
+                      );
+
+    /* Set operating mode */
+    mcp2515_spi_bitmod(dev,
+                       MCP2515_CANCTRL,
+                       MCP2515_CANCTRL_REQOP_MASK << MCP2515_CANCTRL_REQOP_SHIFT,
+                       dev->regs->canctrl
                       );
 
     return 0;
@@ -230,6 +249,8 @@ static void mcp2515net_isr(netdev_t *netdev)
     uint8_t irq_flags;
     uint8_t in_buf[TRANSF_BUFFER_SIZE];
     uint8_t out_buf[TRANSF_BUFFER_SIZE];
+
+    DEBUG("[MCP2515NET] isr: Entering ISR in thread context\n");
 
     /* Read interrupt flags */
     out_buf[0] = MCP2515_SPI_READ;
@@ -273,11 +294,9 @@ static void mcp2515net_isr(netdev_t *netdev)
     if( irq_flags & MCP2515_CANINTF_RX0IF) {
         DEBUG("[MCP2515NET] isr: RXB0 frame\n");
 
-        /* Erase field before new information */
-        dev->flags &= ~MCP2515NET_FLAGRXB_MASK;
-
-        /* Since RXB0 is value 0, nothing extra to be done */
-
+        /* Flag RXB0 */
+        dev->flags |= MCP2515NET_INT_RXB0;
+        
         /* Event callback */
         netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
     }
@@ -286,11 +305,8 @@ static void mcp2515net_isr(netdev_t *netdev)
     if( irq_flags & MCP2515_CANINTF_RX1IF) {
         DEBUG("[MCP2515NET] isr: RXB1 frame\n");
 
-        /* Erase field before new information */
-        dev->flags &= ~MCP2515NET_FLAGRXB_MASK; 
-
         /* Flag RXB1 */
-        dev->flags |= 1;
+        dev->flags |= MCP2515NET_INT_RXB1;
         
         /* Event callback */
         netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
@@ -299,11 +315,9 @@ static void mcp2515net_isr(netdev_t *netdev)
     /* ---------- TX0 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX0IF) {
 
-        /* Erase field before new information */
-        dev->flags &= ~(MCP2515NET_FLAGTXB_MASK << MCP2515NET_FLAGTXB_SHIFT); 
-
-        /* Since TXB0 is value 0, nothing extra to be done */
-
+        /* Flag TXB0 */
+        dev->flags |= MCP2515NET_INT_TXB0;
+        
         /* Event callback */
         netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
     }
@@ -311,11 +325,21 @@ static void mcp2515net_isr(netdev_t *netdev)
     /* ---------- TX1 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX1IF) {
 
+        /* Flag TXB1 */
+        dev->flags |= MCP2515NET_INT_TXB1;
+        
+        /* Event callback */
+        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
     }
 
     /* ---------- TX2 Interrupt ---------- */
     if( irq_flags & MCP2515_CANINTF_TX2IF) {
 
+        /* Flag TXB2 */
+        dev->flags |= MCP2515NET_INT_TXB2;
+        
+        /* Event callback */
+        netdev->event_callback(netdev, NETDEV_EVENT_TX_COMPLETE);
     }
 }
 
@@ -333,52 +357,87 @@ static int mcp2515net_recv(netdev_t *netdev, void *buf, size_t max_len, void *in
 {
     mcp2515net_t *dev = container_of(netdev, mcp2515net_t, netdev);
     uint8_t buf_num;
-    uint8_t in_buf[MCP2515_RXB_BYTES + 1];
+    uint8_t dlc;
     uint8_t out_buf[MCP2515_RXB_BYTES + 1];
+    uint8_t in_buf[MCP2515_RXB_BYTES + 1];
 
     (void)buf;
     (void)max_len;
     (void)info;
 
-    /* Obtain buffer number to work on */
-    buf_num = (dev->flags & MCP2515NET_FLAGRXB_MASK);
+    /* Cycle thru receive buffers */
+    for(buf_num = 0; buf_num < MCP2515_RXBUF_NUM; buf_num++) {
 
-    /* Construct instruction according to buffer number */
-    out_buf[0] = MCP2515_SPI_READ_RXBUF |
-                 (buf_num << MCP2515_RXBUF_SHIFT);
+        /* If corresponding buffer's flag is NOT set */
+        if(!(1<<buf_num & dev->flags)) {
 
-    /* Read buffer */
-    mcp2515_spi_transf(dev,
-                       out_buf,
-                       in_buf,
-                       MCP2515_RXB_BYTES + 1
-                      );
+            /* Jump to next flag */
+            continue;
+        }
 
-    /* If it's an extended frame */
-    if (in_buf[MCP2515_RXBUF_SIDL + 1] & MCP2515_RX_IDE) {
+        /* Clear flag */
+        dev->flags &= ~(1<<buf_num);
 
-        /* REG+1 because buffer is shifted due to byte 0 being the instruction */
-        dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 21) +
-                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) << 13) +
-                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0x03) << 16) +
-                               ((uint32_t)in_buf[MCP2515_RXBUF_EID8 + 1] << 8) +
-                                          in_buf[MCP2515_RXBUF_EID0 + 1];
-        dev->rxb[buf_num].id |= CAN_FLAG_EFF;
+        /* Construct instruction according to buffer number */
+        out_buf[0] = MCP2515_SPI_READ_RXBUF | (buf_num << MCP2515_RXBUF_SHIFT);
+
+        /* Read buffer */
+        mcp2515_spi_transf(dev,
+                           out_buf,
+                           in_buf,
+                           MCP2515_RXB_BYTES + 1
+                          );
+
+        /* Clear previous flags to start fresh */
+        dev->rxb[buf_num].flags = 0;
+
+        /* If it's an extended frame */
+        if (in_buf[MCP2515_RXBUF_SIDL + 1] & MCP2515_RX_IDE) {
+
+            /* Signal extended frame */
+            dev->rxb[buf_num].flags |= CAN_FLAG_IDE_EXT;
+
+            /* REG+1 because buffer is shifted due to byte 0 being the instruction */
+            dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 21) +
+                                  (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) << 13) +
+                                  (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0x03) << 16) +
+                                   ((uint32_t)in_buf[MCP2515_RXBUF_EID8 + 1] << 8) +
+                                              in_buf[MCP2515_RXBUF_EID0 + 1];
+        }
+
+        /* If it's an standard frame */
+        else {
+
+            /* Signal standard frame */
+            dev->rxb[buf_num].flags &= ~CAN_FLAG_IDE_MASK;
+
+            /* REG+1 because buffer is shifted due to byte 0 being the instruction */
+            dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 3) +
+                                  (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) >> 5);
+        }
+
+        /* If it is a remote frame */
+        if(in_buf[MCP2515_RXBUF_DLC + 1] & MCP2515_RXB0CTRL_RXRTR) {
+
+            /* Store RTR flag */
+            dev->rxb[buf_num].flags |=  CAN_FLAG_RTR_REM;
+
+        }
+
+        /* If it's a data frame */
+        else {
+
+            /* Get DLC field */
+            dlc = in_buf[MCP2515_RXBUF_DLC + 1] & CAN_FLAG_DLC_MASK;
+
+            /* Store DLC value */
+            dev->rxb[buf_num].flags |= dlc << CAN_FLAG_DLC_SHIFT;
+
+            /* Get payload */
+            memcpy(dev->rxb[buf_num].data, in_buf + 6, dlc);
+        }
+
     }
-
-    /* If it's an standard frame */
-    else {
-
-        /* REG+1 because buffer is shifted due to byte 0 being the instruction */
-        dev->rxb[buf_num].id = ((uint32_t)in_buf[MCP2515_RXBUF_SIDH + 1] << 3) +
-                              (((uint32_t)in_buf[MCP2515_RXBUF_SIDL + 1] & 0xE0) >> 5);
-    }
-
-    /* Get DLC field */
-    dev->rxb[buf_num].dlc = in_buf[MCP2515_RXBUF_DLC + 1];
-
-    /* Get payload */
-    memcpy(dev->rxb[buf_num].data, in_buf + 6, dev->rxb[buf_num].dlc);
 
     return 0;
 }
