@@ -2,7 +2,8 @@
 APPLICATION = uNodo
 
 # If no BOARD is found in the environment, use this default:
-BOARD ?= weact-f411ce
+#BOARD ?= weact-f411ce
+BOARD ?= stm32f4discovery
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../..
@@ -27,27 +28,33 @@ USEMODULE += ps
 USEMODULE += saul_default
 
 # Needed drivers
-USEMODULE += mcp2515net
+#USEMODULE += mcp2515net
+USEMODULE += periph_can_netdev
+#USEMODULE += periph_eth
 
-  # Use modules for networking
-  # gnrc is a meta module including all required, basic gnrc networking modules
-  USEMODULE += gnrc
+# Use modules for networking
+# gnrc is a meta module including all required, basic gnrc networking modules
+USEMODULE += gnrc
 
-  # use the default network interface for the board
-  #USEMODULE += netdev_default
+# use the default network interface for the board
+#USEMODULE += netdev_default
 
-  # Use CAN module
-  USEMODULE += gnrc_netif_can
+# Use CAN module
+USEMODULE += gnrc_netif_can
 
-  # automatically initialize the network interface
-  USEMODULE += auto_init_gnrc_netif
+# automatically initialize the network interface
+USEMODULE += auto_init_gnrc_netif
 
-  # shell command to send L2 packets with a simple string
-  USEMODULE += gnrc_txtsnd
+# shell command to send L2 packets with a simple string
+USEMODULE += gnrc_txtsnd
   
-  # the application dumps received packets to stdout
-  USEMODULE += gnrc_pktdump
+# the application dumps received packets to stdout
+USEMODULE += gnrc_pktdump
+
+# Use PM
+USEMODULE += pm_layered
 
 FEATURES_OPTIONAL += periph_rtc
 
+# This must go at the end!!
 include $(RIOTBASE)/Makefile.include

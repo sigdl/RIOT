@@ -90,6 +90,12 @@ extern "C" {
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
+typedef enum {
+    CAN_MODE_INIT,
+    CAN_MODE_NORMAL,
+    CAN_MODE_SLEEP,
+} can_mode_t;
+
 /**
  * @brief   CAN Frame types
  */
@@ -100,6 +106,29 @@ extern "C" {
 
 /**
  * @brief   Definition for CAN bittiming struct
+ * 
+ *                   Nominal bit time (nbt) composed of 8 time quantum (tq)
+ * |<------------------------------------------------------------------------------------->|
+ * |                                                                                       |
+ * +----------+----------+-------------------------------------------+---------------------+
+ * | SYNC_SEG | PROP_SEG |                PHASE_SEG_1                |     PHASE_SEG_2     |
+ * +----------+----------+-------------------------------------------+---------------------+
+ * |                                                                 ^                     |
+ * |                                                    Sample point | at 75%              |
+ * |----------|----------|----------|----------|----------|----------|----------|----------|
+ * |   Time quanta                                                 6 | 2                   |
+ *
+ * Synchronization segment = always 1 tq
+ * 
+ *                SYNC_SEG + PROP_SEG + PHASE_SEG1
+ * Sample point = --------------------------------
+ *                             nbt
+ *
+ * tseg1 = PROP_SEG + PHASE_SEG_1
+ * tseg2 = PHASE_SEG_2
+ * tseg  = tseg1 + tseg2
+ * nbt   = tseg + SYNC_SEG
+ *
  */
 typedef struct {
     uint32_t *nom_bitrate;      /**< Nominal Bit rate in bits/sec               */
@@ -129,11 +158,19 @@ typedef struct {
 } socketcan_iface_t;
 
 /**
+ * @brief   Definition for CAN power management struct
+ */
+typedef struct {
+    uint8_t     pm_level;       /**< PM block level                             */
+} socketcan_pm_t;
+
+/**
  * @brief   Definition for CAN parameters struct
  */
 typedef struct {
     socketcan_timing_t  timing; /**< CAN timing parameters                      */
     socketcan_iface_t   iface;  /**< CAN interface parameters                   */
+    socketcan_pm_t      pm;     /**< CAN power management parameters            */
 } socketcan_params_t;
 
 /**

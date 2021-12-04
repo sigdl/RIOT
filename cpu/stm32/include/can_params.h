@@ -48,8 +48,8 @@ static const can_conf_t candev_conf[] = {
         .master_rcc_mask = RCC_APB1ENR_CAN1EN,
         .first_filter = 0,
         .nb_filters = 14,
-#endif
-#endif
+#endif /* CANDEV_STM32_CHAN_NUMOF */
+#endif /* CPU_FAM_STM32L4 */
 #if  defined(CPU_FAM_STM32F1)
         .rx_pin = GPIO_PIN(PORT_A, 11),
         .tx_pin = GPIO_PIN(PORT_A, 12),
@@ -61,12 +61,12 @@ static const can_conf_t candev_conf[] = {
         .rx_pin = GPIO_PIN(PORT_D, 0),
         .tx_pin = GPIO_PIN(PORT_D, 1),
         .af = GPIO_AF9,
-#endif
+#endif /* CPU_FAM_STM32F1 */
         .tx_irqn = CAN1_TX_IRQn,
         .rx0_irqn = CAN1_RX0_IRQn,
         .rx1_irqn = CAN1_RX1_IRQn,
         .sce_irqn = CAN1_SCE_IRQn,
-#endif
+#endif /* CPU_FAM_STM32F0 */
         .en_deep_sleep_wake_up = true,
         .ttcm = 0,
         .abom = 1,
