@@ -65,46 +65,53 @@ extern "C" {
  */
 
 /*      -----       Extra Parameters      -----        */
-#ifndef CAN_NETDEV0_DEVICE            /* Device registers base address          */
-  #if defined(CPU_FAM_STM32F0)
-    #define CAN_NETDEV0_DEVICE        CAN
-  #else /* CPU_FAM_STM32F0 */
-    #define CAN_NETDEV0_DEVICE        CAN1
+#if defined(CPU_FAM_STM32F0)
+  #ifndef CAN_NETDEV0_DEVICE          /* Device registers base address          */
+  #define CAN_NETDEV0_DEVICE          CAN
   #endif
+
+#else /* CPU_FAM_STM32F0 */
+  #ifndef CAN_NETDEV0_DEVICE
+  #define CAN_NETDEV0_DEVICE          CAN1
+  #endif
+
+  #ifndef CAN_NETDEV0_MRCCEN          /* Master channel RCC Enable Bit          */
+  #define CAN_NETDEV0_MRCCEN          RCC_APB1ENR_CAN1EN
+  #endif
+  #ifndef CAN_NETDEV0_RCCEN           /* Slave channel RCC Enable Bit           */
+  #define CAN_NETDEV0_RCCEN           RCC_APB1ENR_CAN1EN
+  #endif
+  #ifndef CAN_NETDEV0_SBANK           /* CAN2 start bank                        */
+  #define CAN_NETDEV0_SBANK           14
+  #endif
+  #ifndef CAN_NETDEV0_TTCM            /* Time Triggered Communication Mode      */
+  #define CAN_NETDEV0_TTCM            0
+  #endif
+  #ifndef CAN_NETDEV0_ABOM            /* Automatic bus-off management           */
+  #define CAN_NETDEV0_ABOM            0
+  #endif
+  #ifndef CAN_NETDEV0_AWUM            /* Automatic wakeup mode                  */
+  #define CAN_NETDEV0_AWUM            0
+  #endif
+  #ifndef CAN_NETDEV0_NART            /* No automatic retransmissio             */
+  #define CAN_NETDEV0_NART            0
+  #endif
+  #ifndef CAN_NETDEV0_RFLM            /* Receive FIFO locked mode               */
+  #define CAN_NETDEV0_RFLM            0
+  #endif
+  #ifndef CAN_NETDEV0_TXFP            /* Transmit FIFO priority                 */
+  #define CAN_NETDEV0_TXFP            0
+  #endif
+  #ifndef CAN_NETDEV0_LBKM            /* Loopback mode                          */
+  #define CAN_NETDEV0_LBKM            0
+  #endif
+  #ifndef CAN_NETDEV0_SILM            /* Silent mode                            */
+  #define CAN_NETDEV0_SILM            0
+  #endif
+
 #endif
-#ifndef CAN_NETDEV0_MRCCEN            /* Master channel RCC Enable Bit          */
-#define CAN_NETDEV0_MRCCEN            RCC_APB1ENR_CAN1EN
-#endif
-#ifndef CAN_NETDEV0_RCCEN             /* Slave channel RCC Enable Bit           */
-#define CAN_NETDEV0_RCCEN             RCC_APB1ENR_CAN1EN
-#endif
-#ifndef CAN_NETDEV0_SBANK             /* CAN2 start bank                        */
-#define CAN_NETDEV0_SBANK             14
-#endif
-#ifndef CAN_NETDEV0_TTCM              /* Time Triggered Communication Mode      */
-#define CAN_NETDEV0_TTCM              0
-#endif
-#ifndef CAN_NETDEV0_ABOM              /* Automatic bus-off management           */
-#define CAN_NETDEV0_ABOM              0
-#endif
-#ifndef CAN_NETDEV0_AWUM              /* Automatic wakeup mode                  */
-#define CAN_NETDEV0_AWUM              0
-#endif
-#ifndef CAN_NETDEV0_NART              /* No automatic retransmissio             */
-#define CAN_NETDEV0_NART              0
-#endif
-#ifndef CAN_NETDEV0_RFLM              /* Receive FIFO locked mode               */
-#define CAN_NETDEV0_RFLM              0
-#endif
-#ifndef CAN_NETDEV0_TXFP              /* Transmit FIFO priority                 */
-#define CAN_NETDEV0_TXFP              0
-#endif
-#ifndef CAN_NETDEV0_LBKM              /* Loopback mode                          */
-#define CAN_NETDEV0_LBKM              0
-#endif
-#ifndef CAN_NETDEV0_SILM              /* Silent mode                            */
-#define CAN_NETDEV0_SILM              0
-#endif
+
+
 #if defined(CPU_FAM_STM32F0)
   #ifndef CAN_NETDEV0_IRQ             /* CAN IRQ                                */
   #define CAN_NETDEV0_IRQ             CEC_CAN_IRQn
@@ -159,14 +166,27 @@ extern "C" {
 
  /*     -----     Interface Parameters      -----     */
 #ifndef CAN_NETDEV0_IFACE_RXPIN
-#define CAN_NETDEV0_IFACE_RXPIN       GPIO_PIN(PORT_A, 11)
+#define CAN_NETDEV0_IFACE_RXPIN       GPIO_PIN(PORT_D, 0)
 #endif
 #ifndef CAN_NETDEV0_IFACE_TXPIN
-#define CAN_NETDEV0_IFACE_TXPIN       GPIO_PIN(PORT_A, 12)
+#define CAN_NETDEV0_IFACE_TXPIN       GPIO_PIN(PORT_D, 1)
 #endif
-#ifndef CAN_NETDEV0_IFACE_AF
-#define CAN_NETDEV0_IFACE_AF          GPIO_AF9
+#ifndef CAN_NETDEV0_IFACE_AF_OP       /* AF for normal operation                */
+#define CAN_NETDEV0_IFACE_AF_OP       GPIO_AF9
 #endif
+#ifndef CAN_NETDEV0_IFACE_AF_NDIAG    /* AF for network diagnostics             */
+#define CAN_NETDEV0_IFACE_AF_NDIAG    GPIO_AF0
+#endif
+
+ /*     -----      Buffer Parameters       -----     */
+#ifndef CAN_NETDEV0_BUFFER_RXNUM      /* Number of RX frame buffers             */
+#define CAN_NETDEV0_BUFFER_RXNUM      3
+#endif
+#ifndef CAN_NETDEV0_BUFFER_TXNUM      /* Number of TX frame buffers             */
+#define CAN_NETDEV0_BUFFER_TXNUM      3
+#endif
+
+
 
 #if 0
  /*     -----     Operation Parameters      -----     */
@@ -177,10 +197,15 @@ extern "C" {
 
 
 /* Variable parameters that must be in RAM */
-static uint32_t nom_bitrate_0 = CAN_NETDEV0_TIMING_NBR;
-static uint32_t r_bitrate_0;
-static uint32_t brp_0;
+static uint32_t     nom_bitrate_0 = CAN_NETDEV0_TIMING_NBR;
+static uint32_t     r_bitrate_0;
+static uint32_t     brp_0;
 
+static uint8_t      rxbuf_wr_0 = 0;
+static uint8_t      rxbuf_rd_0 = 0;
+static can_frame_t  rxbuf_0[CAN_NETDEV0_BUFFER_RXNUM];
+static uint8_t      txbuf_cnt_0 = 0;
+static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
 
 #ifndef CAN_NETDEV0_TIMING
 #define CAN_NETDEV0_TIMING            { \
@@ -194,29 +219,46 @@ static uint32_t brp_0;
                                         .sjw          = CAN_NETDEV0_TIMING_SJW \
                                       }
 #endif
+
 #ifndef CAN_NETDEV0_IFACE
 #define CAN_NETDEV0_IFACE             { \
                                         .rx_pin       = CAN_NETDEV0_IFACE_RXPIN, \
                                         .tx_pin       = CAN_NETDEV0_IFACE_TXPIN, \
-                                        .af           = CAN_NETDEV0_IFACE_AF \
+                                        .af_op        = CAN_NETDEV0_IFACE_AF_OP, \
+                                        .af_ndiag     = CAN_NETDEV0_IFACE_AF_NDIAG \
                                       }
 #endif
+
+#ifndef CAN_NETDEV0_BUFFERS
+#define CAN_NETDEV0_BUFFERS           { \
+                                        .rxbuf_num    = CAN_NETDEV0_BUFFER_RXNUM, \
+                                        .rxbuf_wr     = &rxbuf_wr_0, \
+                                        .rxbuf_rd     = &rxbuf_rd_0, \
+                                        .rxbuf        = (can_frame_t *)&rxbuf_0, \
+                                        .txbuf_num    = CAN_NETDEV0_BUFFER_TXNUM, \
+                                        .txbuf_cnt    = &txbuf_cnt_0, \
+                                        .txbuf        = (can_frame_t *)&txbuf_0 \
+                                      }
+#endif
+
 #ifndef CAN_NETDEV0_PM
 #define CAN_NETDEV0_PM                { \
-                                        .pm_level     = CAN_NETDEV0_PMLEVEL, \
+                                        .pm_level     = CAN_NETDEV0_PMLEVEL \
                                       }
 #endif
+
 #ifndef CAN_NETDEV0_PARAMS
 #define CAN_NETDEV0_PARAMS            { \
                                         .timing       = CAN_NETDEV0_TIMING, \
                                         .iface        = CAN_NETDEV0_IFACE, \
-                                        .pm           = CAN_NETDEV0_PM, \
+                                        .buffers      = CAN_NETDEV0_BUFFERS, \
+                                        .pm           = CAN_NETDEV0_PM \
                                       }
 #endif
 
 #if defined(CPU_FAM_STM32F0)
   #ifndef CAN_NETDEV0_EPARAMS
-  #define CAN_NETDEV0_EPARAMS           { \
+  #define CAN_NETDEV0_EPARAMS         { \
                                         .device            = CAN_NETDEV0_DEVICE, \
                                         .master_rcc_enable = CAN_NETDEV0_MRCCEN, \
                                         .rcc_enable        = CAN_NETDEV0_RCCEN, \
@@ -229,12 +271,12 @@ static uint32_t brp_0;
                                         .txfp              = CAN_NETDEV0_TXFP, \
                                         .lbkm              = CAN_NETDEV0_LBKM, \
                                         .silm              = CAN_NETDEV0_SILM, \
-                                        .irq               = CAN_NETDEV0_IRQ, \
+                                        .irq               = CAN_NETDEV0_IRQ \
                                       }
   #endif
-#else 
+#else /* CPU_FAM_STM32F0 */
   #ifndef CAN_NETDEV0_EPARAMS
-  #define CAN_NETDEV0_EPARAMS           { \
+  #define CAN_NETDEV0_EPARAMS         { \
                                         .device            = CAN_NETDEV0_DEVICE, \
                                         .master_rcc_enable = CAN_NETDEV0_MRCCEN, \
                                         .rcc_enable        = CAN_NETDEV0_RCCEN, \
@@ -250,7 +292,7 @@ static uint32_t brp_0;
                                         .irq_rx0           = CAN_NETDEV0_IRQRX0, \
                                         .irq_rx1           = CAN_NETDEV0_IRQRX1, \
                                         .irq_tx            = CAN_NETDEV0_IRQTX, \
-                                        .irq_sce           = CAN_NETDEV0_IRQSCE, \
+                                        .irq_sce           = CAN_NETDEV0_IRQSCE \
                                       }
   #endif
 #endif
@@ -282,6 +324,7 @@ static uint32_t brp_0;
  *------------------------------------------------------------------------------*/
 static const socketcan_params_t   can_netdev_params[]  = CAN_NETDEV_PARAMS;
 static const can_netdev_eparams_t can_netdev_eparams[] = CAN_NETDEV_EPARAMS;
+
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *

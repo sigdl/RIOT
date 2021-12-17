@@ -46,11 +46,22 @@ static const gnrc_netif_ops_t can_ops = {
     .set  = _set,
 };
 
-int gnrc_netif_can_create(gnrc_netif_t *netif, char *stack, int stacksize,
-                               char priority, char *name, netdev_t *dev)
+int gnrc_netif_can_create(gnrc_netif_t  *netif, 
+                          char          *stack,
+                          int            stacksize,
+                          char           priority,
+                          char          *name,
+                          netdev_t      *dev
+                         )
 {
-    return gnrc_netif_create(netif, stack, stacksize, priority, name, dev,
-                             &can_ops);
+    return gnrc_netif_create(netif,
+                             stack,
+                             stacksize,
+                             priority,
+                             name,
+                             dev,
+                            &can_ops
+                            );
 }
 
 static inline void _addr_set_broadcast(uint8_t *dst)

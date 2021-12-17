@@ -225,6 +225,7 @@ enum {
     NETDEV_TYPE_NRF24L01P_NG,
     NETDEV_TYPE_SLIP,
     NETDEV_TYPE_ESP_NOW,
+    NETDEV_TYPE_CAN,
 };
 /** @} */
 
@@ -343,18 +344,18 @@ typedef enum {
  * be used by upper layers to store reference information.
  */
 struct netdev {
-    const struct netdev_driver *driver;            /**< ptr to that driver's interface. */
-    netdev_event_cb_t event_callback;              /**< callback for device events */
-    void *context;                                 /**< ptr to network stack context */
+    const struct netdev_driver *driver;     /**< ptr to that driver's interface */
+    netdev_event_cb_t event_callback;       /**< callback for device events     */
+    void *context;                          /**< ptr to network stack context   */
 #ifdef MODULE_NETDEV_LAYER
-    netdev_t *lower;                               /**< ptr to the lower netdev layer */
+    netdev_t *lower;                        /**< ptr to the lower netdev layer  */
 #endif
 #ifdef MODULE_L2FILTER
-    l2filter_t filter[CONFIG_L2FILTER_LISTSIZE];   /**< link layer address filters */
+    l2filter_t filter[CONFIG_L2FILTER_LISTSIZE]; /**< link layer address filters */
 #endif
 #ifdef MODULE_NETDEV_REGISTER
-    netdev_type_t type;                     /**< driver type used for netdev */
-    uint8_t index;                          /**< instance number of the device */
+    netdev_type_t type;                     /**< driver type used for netdev    */
+    uint8_t index;                          /**< instance number of the device  */
 #endif
 };
 

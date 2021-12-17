@@ -46,15 +46,7 @@ extern "C" {
  * @name CAN_ID flags and masks
  * @{
  */
-/* special address description flags for the CAN_ID */
-#define CAN_FLAG_EFF            (0x80000000U) /**< EFF/SFF is set in the MSB    */
-#define CAN_FLAG_RTR            (0x40000000U) /**< remote transmission request  */
-#define CAN_FLAG_ERR            (0x20000000U) /**< error message frame          */
 
-/* valid bits in CAN ID for frame formats */
-#define CAN_SFF_MASK            (0x000007FFU) /**< standard frame format (SFF)  */
-#define CAN_EFF_MASK            (0x1FFFFFFFU) /**< extended frame format (EFF)  */
-#define CAN_ERR_MASK            (0x1FFFFFFFU) /**< omit EFF, RTR, ERR flags     */
 /** @} */
 
 /* CAN frame flags
@@ -79,7 +71,7 @@ extern "C" {
 #define CAN_FLAG_IDE_STD        0x00
 #define CAN_FLAG_IDE_EXT        0x01
 
-#define CAN_FLAG_RTR_MASK       0x01
+#define CAN_FLAG_RTR_MASK       0x02
 #define CAN_FLAG_RTR_SHIFT      0x01
 #define CAN_FLAG_RTR_DAT        0x00
 #define CAN_FLAG_RTR_REM        0x01
@@ -91,18 +83,18 @@ extern "C" {
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
 typedef enum {
-    CAN_MODE_INIT,
-    CAN_MODE_NORMAL,
-    CAN_MODE_SLEEP,
-} can_mode_t;
+    CAN_OPMODE_INIT,
+    CAN_OPMODE_NORMAL,
+    CAN_OPMODE_SLEEP,
+} can_opmode_t;
 
 /**
  * @brief   CAN Frame types
  */
- enum ca_frame_types {
-     CAN_FRAME_STANDARD,
-     CAN_FRAME_EXTENDED
- };
+enum ca_frame_types {
+    CAN_FRAME_STANDARD,
+    CAN_FRAME_EXTENDED
+};
 
 /**
  * @brief   Definition for CAN bittiming struct
@@ -130,16 +122,37 @@ typedef enum {
  * nbt   = tseg + SYNC_SEG
  *
  */
+
+/**
+ * @brief   Definition for CAN frame struct
+ *      
+ */
 typedef struct {
-    uint32_t *nom_bitrate;      /**< Nominal Bit rate in bits/sec               */
-    uint32_t *r_bitrate;        /**< Real Bit rate in bits/sec                  */
-    uint32_t *brp;              /**< Bit-rate prescaler                         */
-    uint32_t clock;             /**< Clock for CAN device in Hz                 */
-    uint32_t tq;                /**< Time quanta (TQ) in nanoseconds            */
-    uint8_t  prseg;             /**< Propagation segment in TQs                 */
-    uint8_t  phseg1;            /**< Phase segment 1 in TQs                     */
-    uint8_t  phseg2;            /**< Phase segment 2 in TQs                     */
-    uint8_t  sjw;               /**< Synchronisation jump width in TQs          */
+    uint32_t id;                /**< CAN ID                                     */
+    uint8_t  flags;             /**< CAN frame flags                            */
+    uint8_t  data[CAN_PAYLOAD] __attribute__((aligned(8)));
+} can_frame_t;
+
+typedef struct {
+    uint8_t      rxbuf_num;     /**< Num of RX buffer                           */
+    uint8_t     *rxbuf_wr;      /**< Pointer of last available RX frame         */
+    uint8_t     *rxbuf_rd;      /**< Pointer of last processed RX frame         */
+    can_frame_t *rxbuf;         /**< RX frame circular buffer                   */
+    uint8_t      txbuf_num;     /**< Num of TX buffer                           */
+    uint8_t     *txbuf_cnt;     /**< Counter to next available TX buffer        */
+    can_frame_t *txbuf;         /**< TX Buffers                                 */
+} socketcan_buffer_t;
+
+typedef struct {
+    uint32_t    *nom_bitrate;   /**< Nominal Bit rate in bits/sec               */
+    uint32_t    *r_bitrate;     /**< Real Bit rate in bits/sec                  */
+    uint32_t    *brp;           /**< Bit-rate prescaler                         */
+    uint32_t    clock;          /**< Clock for CAN device in Hz                 */
+    uint32_t    tq;             /**< Time quanta (TQ) in nanoseconds            */
+    uint8_t     prseg;          /**< Propagation segment in TQs                 */
+    uint8_t     phseg1;         /**< Phase segment 1 in TQs                     */
+    uint8_t     phseg2;         /**< Phase segment 2 in TQs                     */
+    uint8_t     sjw;            /**< Synchronisation jump width in TQs          */
 } socketcan_timing_t;
 
 /**
@@ -154,7 +167,8 @@ typedef struct {
     gpio_t      rst_pin;        /**< RST pin                                    */
     gpio_t      rx_pin;         /**< RX pin                                     */
     gpio_t      tx_pin;         /**< TX pin                                     */
-    gpio_af_t   af;             /**< Alternate pin function to use              */
+    gpio_af_t   af_op;          /**< Alt pin function for normal operation      */
+    gpio_af_t   af_ndiag;       /**< Alt pin function for network diagnostics   */
 } socketcan_iface_t;
 
 /**
@@ -168,9 +182,10 @@ typedef struct {
  * @brief   Definition for CAN parameters struct
  */
 typedef struct {
-    socketcan_timing_t  timing; /**< CAN timing parameters                      */
-    socketcan_iface_t   iface;  /**< CAN interface parameters                   */
-    socketcan_pm_t      pm;     /**< CAN power management parameters            */
+    socketcan_timing_t  timing;     /**< CAN timing parameters                  */
+    socketcan_iface_t   iface;      /**< CAN interface parameters               */
+    socketcan_buffer_t  buffers;    /**< CAN buffers                            */
+    socketcan_pm_t      pm;         /**< CAN power management parameters        */
 } socketcan_params_t;
 
 /**
@@ -179,16 +194,6 @@ typedef struct {
 typedef struct {
     uint32_t            id;     /**< Full CAN ID                                */
 } can_id_t;
-
-/**
- * @brief   Definition for CAN frame struct
- *      
- */
-typedef struct {
-    uint32_t id;                /**< CAN ID                                     */
-    uint8_t  flags;             /**< CAN frame flags                            */
-    uint8_t  data[CAN_PAYLOAD] __attribute__((aligned(8)));
-} can_frame_t;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *

@@ -59,14 +59,14 @@
  * @{
  */
 can_netdev_t          can_netdev_arr[CAN_NETDEV_NUM];
-static gnrc_netif_t   _netif[CAN_NETDEV_NUM];
+static gnrc_netif_t   can_netdev_netif[CAN_NETDEV_NUM];
 
 /** @} */
 
 /**
  * @brief   Stacks for the MAC layer threads
  */
-static char stack[CAN_NETDEV_NUM][CAN_NETDEV_MAC_STACKSIZE];
+static char can_netdev_stack[CAN_NETDEV_NUM][CAN_NETDEV_MAC_STACKSIZE];
 
 
 /*------------------------------------------------------------------------------*
@@ -99,13 +99,19 @@ void auto_init_can_netdev(void)
         can_netdev_setup(&can_netdev_arr[i], &can_netdev_params[i], &can_netdev_eparams[i], i);
 
         /* Create network interface */
-        gnrc_netif_can_create(&_netif[i],
-                              stack[i], CAN_NETDEV_MAC_STACKSIZE,
+        gnrc_netif_can_create(&can_netdev_netif[i],
+                              can_netdev_stack[i],
+                              CAN_NETDEV_MAC_STACKSIZE,
                               CAN_NETDEV_MAC_PRIO,
-                              "mcp2515",
+                              "periph_can",
                               &can_netdev_arr[i].netdev);
     }
 
     /* Set the minimum power level */
     pm_block(pm_level);
+}
+
+can_netdev_t * get_can_netdev(uint8_t device)
+{
+    return &can_netdev_arr[device];
 }
