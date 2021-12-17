@@ -65,6 +65,11 @@ extern "C" {
  *  
  */
 
+/*      -----  Power Management Parameters  -----        */
+#ifndef MCP2515NET_PMLEVEL
+#define MCP2515NET_PMLEVEL          2
+#endif
+
 /*      -----  Control Parameters  -----        */
 #ifndef MCP2515NET_REG0_WAKFIL      /* WAKFIL signal bit */
 #define MCP2515NET_REG0_WAKFIL      1       /* Wakeup filter enabled            */

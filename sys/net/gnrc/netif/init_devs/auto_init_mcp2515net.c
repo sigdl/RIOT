@@ -24,6 +24,7 @@
 #include "mcp2515net.h"
 #include "mcp2515net_params.h"
 #include "net/gnrc/netif/can.h"
+#include "pm_layered.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -81,6 +82,10 @@ static char stack[MCP2515NET_NUM][MCP2515NET_MAC_STACKSIZE];
  *------------------------------------------------------------------------------*/
 void auto_init_mcp2515net(void)
 {
+
+    /* Set the minimum power level */
+    pm_block(MCP2515NET_PMLEVEL);
+
     for (unsigned i = 0; i < MCP2515NET_NUM; i++) {
         LOG_DEBUG("[auto_init_netif] initializing MCP2515net #%u\n", i);
 

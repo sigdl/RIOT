@@ -36,6 +36,7 @@
 
 #define ENABLE_DEBUG            0
 #include "debug.h"
+#include "log.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -130,7 +131,7 @@ static int mcp2515net_init(netdev_t *netdev)
                       );
 
     if (in_buf[2] != MCP2515_CANCTRL_RESET) {
-        DEBUG("MCP2515: error communicating with device\n");
+        LOG_ERROR("MCP2515: error communicating with device\n");
         return -1;
     }
 
@@ -213,6 +214,8 @@ static int mcp2515net_init(netdev_t *netdev)
                        MCP2515_CANCTRL_REQOP_MASK << MCP2515_CANCTRL_REQOP_SHIFT,
                        dev->regs->canctrl
                       );
+
+    LED0_ON;
 
     return 0;
 }

@@ -31,6 +31,7 @@
 #include "periph/gpio.h"
 #include "net/netdev.h"
 #include "can/socketcan.h"
+#include "board.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
