@@ -29,6 +29,10 @@
 #include "shell.h"
 #include "shell_commands.h"
 
+#ifdef MODULE_CAN_NETDEV_UTILS
+#include "can_netdev/can_netdev_utils.h"
+#endif
+
 #ifdef MODULE_NETIF
 #include "net/gnrc/pktdump.h"
 #include "net/gnrc.h"
@@ -44,10 +48,12 @@ int main(void)
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 #endif
 
-    (void) puts("Welcome to RIOT!");
+    puts("Welcome to RIOT!");
 
-    char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+#ifdef MODULE_CAN_NETDEV_UTILS
+    /* Run CAN netdev test cmds */
+    can_netdev_cmds();
+#endif
 
     return 0;
 }

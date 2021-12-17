@@ -23,6 +23,8 @@ QUIET ?= 1
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
+USEMODULE += ztimer_usec
+USEMODULE += can_netdev_utils
 
 # Include and auto-initialize all available sensors
 USEMODULE += saul_default
