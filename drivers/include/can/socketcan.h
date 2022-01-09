@@ -52,7 +52,7 @@ extern "C" {
 /* CAN frame flags
  *
  * 7654 3210
- * dddd   ri
+ * dddd  tri
  *
  *  i = ID Extension
  *  0   Standard frame
@@ -61,6 +61,10 @@ extern "C" {
  *  r = Remote Trasmit Request
  *  0   data frame
  *  1   remote frame
+ *
+ *  t = Trasmit Global Time
+ *  0   No timestamp
+ *  1   Timestamp trasmitted
  *
  *  dddd = Data Length Code
  *  0 - 8
@@ -75,6 +79,11 @@ extern "C" {
 #define CAN_FLAG_RTR_SHIFT      0x01
 #define CAN_FLAG_RTR_DAT        0x00
 #define CAN_FLAG_RTR_REM        0x01
+
+#define CAN_FLAG_TGT_MASK       0x01
+#define CAN_FLAG_TGT_SHIFT      0x02
+#define CAN_FLAG_TGT_NO         0x00
+#define CAN_FLAG_TGT_YES        0x01
 
 #define CAN_FLAG_DLC_MASK       0x0F
 #define CAN_FLAG_DLC_SHIFT      0x04

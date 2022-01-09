@@ -48,8 +48,6 @@ int main(void)
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 #endif
 
-    puts("Welcome to RIOT!");
-
 #ifdef MODULE_CAN_NETDEV_UTILS
     /* Run CAN netdev test cmds */
     can_netdev_cmds();

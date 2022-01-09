@@ -20,19 +20,17 @@ DEVELHELP ?= 1
 QUIET ?= 1
 
 # Modules to include:
+#USEMODULE += mcp2515net
+USEMODULE += periph_can_netdev
+#USEMODULE += periph_eth
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
-USEMODULE += ztimer_usec
+#USEMODULE += ztimer_usec
 USEMODULE += can_netdev_utils
 
 # Include and auto-initialize all available sensors
 USEMODULE += saul_default
-
-# Needed drivers
-#USEMODULE += mcp2515net
-USEMODULE += periph_can_netdev
-#USEMODULE += periph_eth
 
 # Use modules for networking
 # gnrc is a meta module including all required, basic gnrc networking modules

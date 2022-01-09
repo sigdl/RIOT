@@ -58,8 +58,8 @@
  * @brief   Allocate memory for the device descriptors
  * @{
  */
-can_netdev_t          can_netdev_arr[CAN_NETDEV_NUM];
-static gnrc_netif_t   can_netdev_netif[CAN_NETDEV_NUM];
+static can_netdev_t can_netdev_arr[CAN_NETDEV_NUM];
+static gnrc_netif_t can_netdev_netif[CAN_NETDEV_NUM];
 
 /** @} */
 
@@ -111,7 +111,7 @@ void auto_init_can_netdev(void)
     pm_block(pm_level);
 }
 
-can_netdev_t * get_can_netdev(uint8_t device)
+inline can_netdev_t * get_can_netdev(int8_t device)
 {
     return &can_netdev_arr[device];
 }

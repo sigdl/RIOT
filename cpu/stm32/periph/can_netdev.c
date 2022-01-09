@@ -42,6 +42,27 @@
 #define TRANSF_BUFFER_SIZE      5
 #define MODE_MAX_DELAY          (100000U)
 
+/* Convenient alias for IRQ handlers */
+#if defined(CPU_FAM_STM32F1)
+    #define ISR_CAN1_TX         isr_usb_hp_can1_tx
+    #define ISR_CAN1_RX0        isr_usb_lp_can1_rx0
+    #define ISR_CAN1_RX1        isr_can1_rx1
+    #define ISR_CAN1_SCE        isr_can1_sce
+#else
+    #define ISR_CAN1_TX         isr_can1_tx
+    #define ISR_CAN1_RX0        isr_can1_rx0
+    #define ISR_CAN1_RX1        isr_can1_rx1
+    #define ISR_CAN1_SCE        isr_can1_sce
+    #define ISR_CAN2_TX         isr_can2_tx
+    #define ISR_CAN2_RX0        isr_can2_rx0
+    #define ISR_CAN2_RX1        isr_can2_rx1
+    #define ISR_CAN2_SCE        isr_can2_sce
+    #define ISR_CAN3_TX         isr_can3_tx
+    #define ISR_CAN3_RX0        isr_can3_rx0
+    #define ISR_CAN3_RX1        isr_can3_rx1
+    #define ISR_CAN3_SCE        isr_can3_sce
+#endif
+
 /*------------------------------------------------------------------------------*
  *                                 Private Types                                *
  *------------------------------------------------------------------------------*/
@@ -57,6 +78,12 @@ static int  can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *i
 static int  can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  can_netdev_mode(can_netdev_t *dev, can_opmode_t mode);
+int can_netdev_filterconf(can_netdev_t *dev,
+                          uint8_t filter,
+                          uint8_t fifo,
+                          can_netdev_filtermode_t mode,
+                          uint32_t value1,
+                          uint32_t value2);
 static void rx_irq_h(void *arg, uint8_t mailbox);
 static void tx_irq_h(void *arg);
 static void sce_irq_h(void *arg);
@@ -73,7 +100,6 @@ static const netdev_driver_t can_netdev_driver = {
     .get  = can_netdev_get,
     .set  = can_netdev_set,
 };
-extern can_netdev_t can_netdev_arr[];
 
 /*------------------------------------------------------------------------------*
  *                               Private Functions                              *
@@ -91,11 +117,21 @@ static int can_netdev_init(netdev_t *netdev)
 {
     can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
 
+    /*Disable interrupts before changing anything*/
+#if defined(CPU_FAM_STM32F0)
+    NVIC_DisableIRQ(dev->eparams->irq);
+#else
+    NVIC_DisableIRQ(dev->eparams->irq_rx0);
+    NVIC_DisableIRQ(dev->eparams->irq_rx1);
+    NVIC_DisableIRQ(dev->eparams->irq_tx);
+    NVIC_DisableIRQ(dev->eparams->irq_sce);
+#endif /* CPU_FAM_STM32F0 */
+
     /* Do basic config */
-    can_netdev_bconfig(dev, CAN_CONFMODE_OP);
+    can_netdev_basicconf(dev, CAN_CONFMODE_OP);
 
     /* Do operational parameters config */
-    can_netdev_opconfig(dev);
+    can_netdev_opconf(dev);
 
     return 0;
 }
@@ -110,28 +146,44 @@ static int can_netdev_init(netdev_t *netdev)
  */
 void ISR_CAN1_RX0(void)
 {
-    rx_irq_h(&can_netdev_arr[0], 0);
+#ifdef ENABLE_DEBUG
+    LED0_TOGGLE;
+#endif
+
+    rx_irq_h(get_can_netdev(0), 0);
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_RX1(void)
 {
-    rx_irq_h(&can_netdev_arr[0], 1);
+#ifdef ENABLE_DEBUG
+    LED1_TOGGLE;
+#endif
+
+    rx_irq_h(get_can_netdev(0), 1);
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_TX(void)
 {
-    tx_irq_h(&can_netdev_arr[0]);
+#ifdef ENABLE_DEBUG
+    LED2_TOGGLE;
+#endif
+
+    tx_irq_h(get_can_netdev(0));
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_SCE(void)
 {
-    sce_irq_h(&can_netdev_arr[0]);
+#ifdef ENABLE_DEBUG
+    LED3_TOGGLE;
+#endif
+
+    sce_irq_h(get_can_netdev(0));
 
     cortexm_isr_end();
 }
@@ -143,10 +195,6 @@ static inline void rx_irq_h(void *arg, uint8_t mailbox)
     uint8_t       dlc;
     uint8_t       i;
     volatile uint32_t *rfr;
-
-#ifdef ENABLE_DEBUG
-    LED0_TOGGLE;
-#endif
 
     /* Select registers of given mailbox */
     if (mailbox == 0) {
@@ -308,8 +356,96 @@ static int can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *in
  */
 static int can_netdev_send(netdev_t *netdev, const iolist_t *iolist)
 {
-    netdev++;
-    iolist++;
+    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
+    can_frame_t  *frame;   
+    uint8_t i;
+    uint8_t dlc;
+    uint32_t id;
+
+
+    /* If mailbox 0 is ready */
+    if (dev->eparams->device->TSR & CAN_TSR_TME0) {
+
+        /* It will be mailbox 0 */
+        i = 0;
+    }
+
+    /* If mailbox 1 is ready */
+    else if(dev->eparams->device->TSR & CAN_TSR_TME1) {
+
+        /* It will be mailbox 1 */
+        i = 1;
+    }
+
+    /* If mailbox 2 is ready */
+    else if(dev->eparams->device->TSR & CAN_TSR_TME2) {
+
+        /* It will be mailbox 0 */
+        i = 2;
+    }
+
+    /* If no mailbox is ready */
+    else {
+        return -EBUSY;
+    }
+
+    /* Obtaining frame */
+    frame = (can_frame_t *)iolist->iol_base;
+
+    /* If it's Extended frame */
+    if((frame->flags & CAN_FLAG_IDE_MASK) == CAN_FLAG_IDE_EXT) {
+
+        /* Config TIxR */
+        dev->eparams->device->sTxMailBox[i].TIR =
+            (frame->id << CAN_TI0R_EXID_Pos) & CAN_TI0R_EXID_Msk;
+    }
+
+    /* If it's Standard frame */
+    else {
+
+        /* Config TIxR */
+        dev->eparams->device->sTxMailBox[i].TIR =
+            (frame->id << CAN_TI0R_STID_Pos) & CAN_TI0R_STID_Msk;
+        id = frame->id << CAN_TI0R_STID_Pos;
+        id++;
+    }
+
+    /* If it's Remote frame */
+    if(frame->flags & (CAN_FLAG_RTR_REM << CAN_FLAG_RTR_SHIFT)) {
+
+        /* Add RTR */
+        dev->eparams->device->sTxMailBox[i].TIR |= CAN_TI0R_RTR;
+    }
+
+    /* Set DLC */
+    dlc = (frame->flags >> CAN_FLAG_DLC_SHIFT) & CAN_FLAG_DLC_MASK;
+    dev->eparams->device->sTxMailBox[i].TDTR = (uint32_t)dlc;
+
+    /* If TGT is indicated */
+    if(frame->flags & (CAN_FLAG_TGT_YES << CAN_FLAG_TGT_SHIFT)) {
+
+        /* Add TGT */
+        dev->eparams->device->sTxMailBox[i].TDTR |= CAN_TDT0R_TGT;
+    }
+
+    /* Blank data registers */
+    dev->eparams->device->sTxMailBox[i].TDLR = 0;
+    dev->eparams->device->sTxMailBox[i].TDHR = 0;
+
+    /* Load first 4 data bytes */
+    for (int j = 0; j < 4 && dlc > j; j++) {
+        dev->eparams->device->sTxMailBox[i].TDLR |=
+            (uint32_t)(frame->data[j] << (8 * j));
+    }
+
+    /* Load last 4 data bytes */
+    for (int j = 0; j < 4 && j + 4 < dlc; j++) {
+        dev->eparams->device->sTxMailBox[i].TDHR |=
+            (uint32_t)(frame->data[j + 4] << (8 * j));
+    }
+
+    /* Send frame */
+    dev->eparams->device->sTxMailBox[i].TIR |= CAN_TI0R_TXRQ;
 
     return 0;
 }
@@ -371,7 +507,7 @@ static int can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, siz
 }
 
 /**
- * @brief STM32 set mode function
+ * @brief STM32 CAN set mode function
  *
  * 
  *
@@ -480,15 +616,11 @@ void can_netdev_setup(can_netdev_t *dev,
 /**
  * @brief STM32 CAN periph basic config
  *
- * This set of procedures is in a different function so it can be called anywhere
- * to change the basic configuration for normal operation, media diagnostic, etc
+ * Selects the mode (direct in/out or AF) of used pins and related configurations
  *
  */
-int can_netdev_bconfig(can_netdev_t *dev, can_confmode_t mode)
+int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
 {
-#ifdef ENABLE_DEBUG
-    LED0_TOGGLE;
-#endif
 
      /*Disable interrupts before changing anything*/
 #if defined(CPU_FAM_STM32F0)
@@ -500,29 +632,25 @@ int can_netdev_bconfig(can_netdev_t *dev, can_confmode_t mode)
     NVIC_DisableIRQ(dev->eparams->irq_sce);
 #endif /* CPU_FAM_STM32F0 */
 
-   /* Master channel's clock must be always enabled */
-    periph_clk_en(APB1, dev->eparams->master_rcc_enable);
-
-#if CAN_NETDEV_NUM > 1
-    /* Enable current channel's clock */
-    periph_clk_en(APB1, dev->eparams->rcc_mask);
-#endif
-
     /* Init rx pin */
-    gpio_init(dev->params->iface.rx_pin, GPIO_IN);
-    gpio_init_analog(dev->params->iface.rx_pin);
     gpio_init(dev->params->iface.rx_pin, GPIO_IN);
 
     /* Init tx pin */
-    gpio_init(dev->params->iface.tx_pin, GPIO_IN);
-    gpio_init_analog(dev->params->iface.tx_pin);
     gpio_init(dev->params->iface.tx_pin, GPIO_OUT);
 
-    /* Configuring for normal operation
-       It's possible to configure later for other modes, like diagnostic, etc */
+    /* Selecting configuration */
     switch( mode ) {
 
+        /* Configuring for normal operation */
         case CAN_CONFMODE_OP:
+
+            /* Master channel's clock must be always enabled */
+            periph_clk_en(APB1, dev->eparams->master_rcc_enable);
+
+#if CAN_NETDEV_NUM > 1
+            /* Enable current channel's clock */
+            periph_clk_en(APB1, dev->eparams->rcc_mask);
+#endif
 
             /* Extra steps for pin configuration */
 #ifdef CPU_FAM_STM32F1
@@ -533,14 +661,12 @@ int can_netdev_bconfig(can_netdev_t *dev, can_confmode_t mode)
 #endif
             break;
 
+        /* Configuring for physical network testing */
         case CAN_CONFMODE_NTEST:
 
-#ifdef CPU_FAM_STM32F1
-            gpio_init_af(dev->params->iface.tx_pin, GPIO_AF_OUT_PP);
-#else
-            gpio_init_af(dev->params->iface.rx_pin, dev->params->iface.af_ndiag);
-            gpio_init_af(dev->params->iface.tx_pin, dev->params->iface.af_ndiag);
-#endif
+            /* Set TX pin to 0 */
+            gpio_clear(dev->params->iface.tx_pin);
+
             break;
     }
 
@@ -554,19 +680,9 @@ int can_netdev_bconfig(can_netdev_t *dev, can_confmode_t mode)
  * to change the configuration of things like bitrate, mode, etc
  *
  */
-int can_netdev_opconfig(can_netdev_t *dev)
+int can_netdev_opconf(can_netdev_t *dev)
 {
     uint32_t      config;
-
-    /*Disable interrupts before changing anything*/
-#if defined(CPU_FAM_STM32F0)
-    NVIC_DisableIRQ(dev->eparams->irq);
-#else
-    NVIC_DisableIRQ(dev->eparams->irq_rx0);
-    NVIC_DisableIRQ(dev->eparams->irq_rx1);
-    NVIC_DisableIRQ(dev->eparams->irq_tx);
-    NVIC_DisableIRQ(dev->eparams->irq_sce);
-#endif /* CPU_FAM_STM32F0 */
 
     /* Set init mode */
     can_netdev_mode(dev, CAN_OPMODE_INIT);
@@ -594,10 +710,10 @@ int can_netdev_opconfig(can_netdev_t *dev)
     dev->eparams->device->BTR =
          (((uint32_t)dev->eparams->silm              << CAN_BTR_SILM_Pos) & CAN_BTR_SILM_Msk) |
          (((uint32_t)dev->eparams->lbkm              << CAN_BTR_LBKM_Pos) & CAN_BTR_LBKM_Msk) |
-        (((uint32_t)(dev->params->timing.sjw - 1)    << CAN_BTR_SJW_Pos) & CAN_BTR_SJW_Msk) |
-        (((uint32_t)(dev->params->timing.phseg2 - 1) << CAN_BTR_TS2_Pos) & CAN_BTR_TS2_Msk) |
+        (((uint32_t)(dev->params->timing.sjw - 1)    << CAN_BTR_SJW_Pos)  & CAN_BTR_SJW_Msk)  |
+        (((uint32_t)(dev->params->timing.phseg2 - 1) << CAN_BTR_TS2_Pos)  & CAN_BTR_TS2_Msk)  |
        (((uint32_t)((dev->params->timing.phseg1 +
-                     dev->params->timing.prseg) - 1) << CAN_BTR_TS1_Pos) & CAN_BTR_TS1_Msk) |
+                     dev->params->timing.prseg) - 1) << CAN_BTR_TS1_Pos)  & CAN_BTR_TS1_Msk)  |
        ((uint32_t)(*(dev->params->timing.brp)) & CAN_BTR_BRP_Msk);
 
     /* Configure filter init state ON */
@@ -644,4 +760,102 @@ int can_netdev_opconfig(can_netdev_t *dev)
     return 0;
 }
 
+/**
+ * @brief STM32 CAN periph filter config
+ *
+ *
+ */
+int can_netdev_filterconf(can_netdev_t *dev,
+                          uint8_t filter,
+                          uint8_t fifo,
+                          can_netdev_filtermode_t mode,
+                          uint32_t value1,
+                          uint32_t value2)
+{
+    uint32_t mask_on;
+    uint32_t mask_off;
 
+    /* Configure filter init state ON */
+    dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
+
+    /* Calculate masks for turning ON and OFF  */
+    mask_on  = 0x1 << filter;
+    mask_off = 0xfffffffe << filter;
+
+    /* Deactivate filter */
+    dev->eparams->device->FA1R &= mask_off;
+
+    /* If turning OFF filter */
+    if(mode == CAN_FILTER_OFF) {
+
+        /* Ending process */
+        return 0;
+    }
+
+    /* If going for FIFO 1 */
+    if(fifo) {
+        dev->eparams->device->FFA1R |= mask_on;
+    }
+
+    /* If going for FIFO 0 */
+    else
+    {
+        dev->eparams->device->FFA1R &= mask_off;
+    }
+
+    /* Select FBM and FSC bits of FS1R and FM1R regs according to mode */
+    switch (mode) {
+
+        case CAN_FILTER_MSK32:
+            /* FBM = 0 */
+            dev->eparams->device->FM1R &= mask_off;
+
+            /* FSC = 1 */
+            dev->eparams->device->FS1R |= mask_on;
+            break;
+    
+        case CAN_FILTER_ID32:
+            /* FBM = 1 */
+            dev->eparams->device->FM1R |= mask_on;
+
+            /* FSC = 1 */
+            dev->eparams->device->FS1R |= mask_on;
+
+            break;
+    
+        case CAN_FILTER_MSK16:
+            /* FBM = 0 */
+            dev->eparams->device->FM1R &= mask_off;
+
+            /* FSC = 0 */
+            dev->eparams->device->FS1R &= mask_off;
+
+            break;
+    
+        case CAN_FILTER_ID16:
+            /* FBM = 1 */
+            dev->eparams->device->FM1R |= mask_on;
+
+            /* FSC = 0 */
+            dev->eparams->device->FS1R &= mask_off;
+
+            break;
+
+        default:
+            break;
+    }
+
+    /* Load Mask/ID values */
+    dev->eparams->device->sFilterRegister[filter].FR1 =
+        value1;
+    dev->eparams->device->sFilterRegister[filter].FR2 =
+        value2;
+
+    /* Activate filter */
+    dev->eparams->device->FA1R |= mask_on;
+
+    /* Filter init state OFF */
+    dev->eparams->device->FMR &= ~CAN_FMR_FINIT_Msk;
+
+    return 0;
+}
