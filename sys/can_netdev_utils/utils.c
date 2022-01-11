@@ -516,6 +516,14 @@ int can_netdev_filter(int argc, char **argv)
         dev = get_can_netdev(iface);
     }
 
+    DEBUG("Configuring filter=%u for iface=%u fifo=%u in mode=%u with val1=%lu and val2=%lu\n",
+           filter,
+           iface,
+           fifo,
+           mode,
+           val1,
+           val2);
+
     /* Configure filter */
     can_netdev_filterconf(dev, filter, fifo, mode, val1, val2);
 

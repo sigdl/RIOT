@@ -122,7 +122,7 @@ extern "C" {
   #ifndef CAN_NETDEV0_IRQRX1          /* CAN RX1 IRQ                            */
   #define CAN_NETDEV0_IRQRX1          CAN1_RX1_IRQn
   #endif
-  #ifndef CAN_NETDEV0_IRQTX           /* CAN TX IRQ                            */
+  #ifndef CAN_NETDEV0_IRQTX           /* CAN TX IRQ                             */
   #define CAN_NETDEV0_IRQTX           CAN1_TX_IRQn
   #endif
   #ifndef CAN_NETDEV0_IRQSCE          /* CAN RX0 IRQ                            */
@@ -200,12 +200,6 @@ static uint32_t     nom_bitrate_0 = CAN_NETDEV0_TIMING_NBR;
 static uint32_t     r_bitrate_0;
 static uint32_t     brp_0;
 
-static uint8_t      rxbuf_wr_0 = 0;
-static uint8_t      rxbuf_rd_0 = 0;
-static can_frame_t  rxbuf_0[CAN_NETDEV0_BUFFER_RXNUM];
-static uint8_t      txbuf_cnt_0 = 0;
-static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
-
 #ifndef CAN_NETDEV0_TIMING
 #define CAN_NETDEV0_TIMING            { \
                                         .nom_bitrate  = &nom_bitrate_0, \
@@ -228,15 +222,21 @@ static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
                                       }
 #endif
 
+/* Variable parameters that must be in RAM */
+static uint8_t      rxbuf_0_wr = 0;
+static uint8_t      rxbuf_0_rd = 0;
+static can_frame_t  rxbuf_0[CAN_NETDEV0_BUFFER_RXNUM];
+#if 0
+static uint8_t      txbuf_cnt_0 = 0;
+static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
+#endif
+
 #ifndef CAN_NETDEV0_BUFFERS
 #define CAN_NETDEV0_BUFFERS           { \
                                         .rxbuf_num    = CAN_NETDEV0_BUFFER_RXNUM, \
-                                        .rxbuf_wr     = &rxbuf_wr_0, \
-                                        .rxbuf_rd     = &rxbuf_rd_0, \
+                                        .rxbuf_wr     = &rxbuf_0_wr, \
+                                        .rxbuf_rd     = &rxbuf_0_rd, \
                                         .rxbuf        = (can_frame_t *)&rxbuf_0, \
-                                        .txbuf_num    = CAN_NETDEV0_BUFFER_TXNUM, \
-                                        .txbuf_cnt    = &txbuf_cnt_0, \
-                                        .txbuf        = (can_frame_t *)&txbuf_0 \
                                       }
 #endif
 

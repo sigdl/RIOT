@@ -84,9 +84,9 @@ int can_netdev_filterconf(can_netdev_t *dev,
                           can_netdev_filtermode_t mode,
                           uint32_t value1,
                           uint32_t value2);
-static void rx_irq_h(void *arg, uint8_t mailbox);
-static void tx_irq_h(void *arg);
-static void sce_irq_h(void *arg);
+static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox);
+static void tx_isr(void *arg);
+static void sce_isr(void *arg);
 
 
 /*------------------------------------------------------------------------------*
@@ -147,50 +147,81 @@ static int can_netdev_init(netdev_t *netdev)
 void ISR_CAN1_RX0(void)
 {
 #ifdef ENABLE_DEBUG
-    LED0_TOGGLE;
+    LED0_ON;
 #endif
+    /* Obtain device's structure */
+    can_netdev_t *dev = get_can_netdev(0);
 
-    rx_irq_h(get_can_netdev(0), 0);
+    /* Turn IRQ off */
+    NVIC_DisableIRQ(dev->eparams->irq_rx0);
+
+    /* Turn interrupt flags OFF */
+    dev->eparams->device->IER &= ~(CAN_IER_FOVIE0 |
+                                   CAN_IER_FFIE0  |
+                                   CAN_IER_FMPIE0);
+
+    /* Signal RX0 interrupt */
+    dev->flag_rx0 = 1;
+
+    /* Signal event to driver's ISR */
+    netdev_trigger_event_isr(&dev->netdev);
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_RX1(void)
 {
-#ifdef ENABLE_DEBUG
-    LED1_TOGGLE;
-#endif
 
-    rx_irq_h(get_can_netdev(0), 1);
+    /* Obtain device's structure */
+    can_netdev_t *dev = get_can_netdev(0);
+
+    /* Turn IRQ off */
+    NVIC_DisableIRQ(dev->eparams->irq_rx1);
+
+    /* Turn interrupt flags OFF */
+    dev->eparams->device->IER &= ~(CAN_IER_FOVIE1 | 
+                                   CAN_IER_FFIE1  |
+                                   CAN_IER_FMPIE1);
+
+    /* Signal RX1 interrupt */
+    dev->flag_rx1 = 1;
+
+    /* Signal event to driver's ISR */
+    netdev_trigger_event_isr(&dev->netdev);
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_TX(void)
 {
-#ifdef ENABLE_DEBUG
-    LED2_TOGGLE;
-#endif
+    /* Obtain device's structure */
+    can_netdev_t *dev = get_can_netdev(0);
 
-    tx_irq_h(get_can_netdev(0));
+    /* Signal TX interrupt */
+    dev->flag_tx = 1;
+
+    /* Signal event to driver's ISR */
+    netdev_trigger_event_isr(&dev->netdev);
 
     cortexm_isr_end();
 }
 
 void ISR_CAN1_SCE(void)
 {
-#ifdef ENABLE_DEBUG
-    LED3_TOGGLE;
-#endif
+    /* Obtain device's structure */
+    can_netdev_t *dev = get_can_netdev(0);
 
-    sce_irq_h(get_can_netdev(0));
+    /* Signal SCE interrupt */
+    dev->flag_sce = 1;
+
+    /* Signal event to driver's ISR */
+    netdev_trigger_event_isr(&dev->netdev);
 
     cortexm_isr_end();
 }
 
-static inline void rx_irq_h(void *arg, uint8_t mailbox)
+static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
 {
-    can_netdev_t *dev = arg;
     uint8_t       flags;
     uint8_t       dlc;
     uint8_t       i;
@@ -254,13 +285,13 @@ static inline void rx_irq_h(void *arg, uint8_t mailbox)
             flags |= dlc << CAN_FLAG_DLC_SHIFT;
 
             /* Save data */
-            for(i = 0; i < 4; i++) {
+            for(i = 0; i < 4 && i < dlc; i++) {
                 dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].data[i] =
                     (dev->eparams->device->sFIFOMailBox[mailbox].RDLR >> (i * 8)) & 0xFF;
             }
-            for(i = 4; i < 8; i++) {
-                dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].data[i] =
-                    (dev->eparams->device->sFIFOMailBox[mailbox].RDHR >> ((i - 4) * 8)) & 0xFF;
+            for(i = 0; i < 4 && i + 4 < dlc; i++) {
+                dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].data[i + 4] =
+                    (dev->eparams->device->sFIFOMailBox[mailbox].RDHR >> (i * 8)) & 0xFF;
             }
 
             /* Save flags */
@@ -281,11 +312,9 @@ static inline void rx_irq_h(void *arg, uint8_t mailbox)
         *rfr |= CAN_NETDEV_RFOM_MASK;
     }
 
-    /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->netdev);
 }
 
-static inline void tx_irq_h(void *arg)
+static inline void tx_isr(void *arg)
 {
     can_netdev_t *dev = arg;
 
@@ -293,7 +322,7 @@ static inline void tx_irq_h(void *arg)
     netdev_trigger_event_isr(&dev->netdev);
 }
 
-static inline void sce_irq_h(void *arg)
+static inline void sce_isr(void *arg)
 {
     can_netdev_t *dev = arg;
 
@@ -316,9 +345,68 @@ static void can_netdev_isr(netdev_t *netdev)
 {
     can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
 
-    (void)dev;
     DEBUG("[PERIPH CAN] isr: Entering ISR in thread context\n");
 
+    /**********     RX0 interrupt     **********/
+    if(dev->flag_rx0) {
+
+#ifdef ENABLE_DEBUG
+        LED1_ON;
+#endif
+
+        /* Turn IRQ flagg off */
+        dev->flag_rx0 = 0;
+
+        /* Process RX0 isr */
+        rx_isr(dev, 0);
+
+        /* Turn interrupt flags ON */
+        dev->eparams->device->IER |= CAN_IER_FOVIE0 |
+                                     CAN_IER_FFIE0  |
+                                     CAN_IER_FMPIE0;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx0);
+    }
+
+    /**********     RX1 interrupt     **********/
+    if(dev->flag_rx1) {
+
+        /* Turn IRQ off */
+        NVIC_DisableIRQ(dev->eparams->irq_rx1);
+
+        /* Turn IRQ flagg off */
+        dev->flag_rx1 = 0;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx1);
+    }
+
+    /**********     TX  interrupt     **********/
+    if(dev->flag_tx) {
+
+        /* Turn IRQ off */
+        NVIC_DisableIRQ(dev->eparams->irq_rx0);
+
+        /* Turn IRQ flagg off */
+        dev->flag_tx = 0;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx0);
+    }
+
+    /**********     SCE interrupt     **********/
+    if(dev->flag_sce) {
+
+        /* Turn IRQ off */
+        NVIC_DisableIRQ(dev->eparams->irq_sce);
+
+        /* Turn IRQ flagg off */
+        dev->flag_sce = 0;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_sce);
+    }
 }
 
 /**
@@ -433,7 +521,7 @@ static int can_netdev_send(netdev_t *netdev, const iolist_t *iolist)
     dev->eparams->device->sTxMailBox[i].TDHR = 0;
 
     /* Load first 4 data bytes */
-    for (int j = 0; j < 4 && dlc > j; j++) {
+    for (int j = 0; j < 4 && j < dlc; j++) {
         dev->eparams->device->sTxMailBox[i].TDLR |=
             (uint32_t)(frame->data[j] << (8 * j));
     }
@@ -737,10 +825,18 @@ int can_netdev_opconf(can_netdev_t *dev)
     dev->eparams->device->RF1R |= CAN_RF1R_FMP1 | CAN_RF1R_FULL1 | CAN_RF1R_FOVR1;
     dev->eparams->device->ESR  |= CAN_ESR_EWGF  | CAN_ESR_EPVF   | CAN_ESR_BOFF;
     dev->eparams->device->MSR  |= CAN_MSR_WKUI;
-    dev->eparams->device->IER   = CAN_IER_WKUIE  | CAN_IER_EPVIE  | CAN_IER_EWGIE  | 
-                                  CAN_IER_ERRIE  | CAN_IER_BOFIE  | CAN_IER_FOVIE1 | 
-                                  CAN_IER_FMPIE1 | CAN_IER_FOVIE0 | CAN_IER_FMPIE0 |
+
+    dev->eparams->device->IER   = CAN_IER_WKUIE  | CAN_IER_EPVIE  | CAN_IER_ERRIE  |
+                                  CAN_IER_BOFIE  | CAN_IER_EWGIE  |
+                                  CAN_IER_FOVIE1 | CAN_IER_FFIE1  | CAN_IER_FMPIE1 | 
+                                  CAN_IER_FOVIE0 | CAN_IER_FFIE0  | CAN_IER_FMPIE0 | 
                                   CAN_IER_TMEIE;
+
+    /* Clear interrupt flags */
+    dev->flag_rx0 = 0;
+    dev->flag_rx1 = 0;
+    dev->flag_tx  = 0;
+    dev->flag_sce = 0;
 
     /*Enable interrupts */
 #if defined(CPU_FAM_STM32F0)

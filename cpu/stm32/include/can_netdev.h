@@ -72,15 +72,15 @@ typedef struct {
 #else
     uint32_t         master_rcc_enable;     /**< Enable bit for master CAN periph */
     uint32_t         rcc_enable;            /**< Enable bit for current CAN periph */
-    uint8_t          start_bank;            /**< CAN2 start bank                */
-    uint8_t          ttcm : 1;              /**< Time triggered communication mode */
-    uint8_t          abom : 1;              /**< Automatic bus-off management   */
-    uint8_t          awum : 1;              /**< Automatic wakeup mode          */
-    uint8_t          nart : 1;              /**< No automatic retransmission    */
-    uint8_t          rflm : 1;              /**< Receive FIFO locked mode       */
-    uint8_t          txfp : 1;              /**< Transmit FIFO priority         */
-    uint8_t          lbkm : 1;              /**< Loopback mode                  */
-    uint8_t          silm : 1;              /**< Silent mode                    */
+    uint8_t          start_bank;            /**< CAN2 filter bank start         */
+    uint8_t          ttcm     : 1;          /**< Time triggered communication mode */
+    uint8_t          abom     : 1;          /**< Automatic bus-off management   */
+    uint8_t          awum     : 1;          /**< Automatic wakeup mode          */
+    uint8_t          nart     : 1;          /**< No automatic retransmission    */
+    uint8_t          rflm     : 1;          /**< Receive FIFO locked mode       */
+    uint8_t          txfp     : 1;          /**< Transmit FIFO priority         */
+    uint8_t          lbkm     : 1;          /**< Loopback mode                  */
+    uint8_t          silm     : 1;          /**< Silent mode                    */
     uint8_t          irq_rx0;               /**< RX0 IRQ vector                 */
     uint8_t          irq_rx1;               /**< RX1 IRQ vector                 */
     uint8_t          irq_tx;                /**< TX  IRQ vector                 */
@@ -105,8 +105,11 @@ typedef struct {
  *
  */
 typedef struct {
-    mutex_t                     lock;     /**< Exclusive access mutex           */    
-    uint8_t                     flags;    /**< Flags for RXB number, etc        */
+    mutex_t          lock;                /**< Exclusive access mutex           */    
+    uint8_t          flag_rx0 : 1;        /**< Signals RX0 interrupt occured    */
+    uint8_t          flag_rx1 : 1;        /**< Signals RX1 interrupt occured    */
+    uint8_t          flag_tx  : 1;        /**< Signals TX  interrupt occured    */
+    uint8_t          flag_sce : 1;        /**< Signals SCE interrupt occured    */
     const socketcan_params_t   *params;   /**< CAN config                       */
     const can_netdev_eparams_t *eparams;  /**< CAN extra config                 */
     netdev_t                    netdev;   /**< Netdev config                    */
