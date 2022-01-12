@@ -545,7 +545,7 @@ int can_netdev_frame(int argc, char **argv)
 
     /* If not correctly called */
     if (argc < 3) {
-        puts("usage:can_netdev_send <iface (0-3)> <id> <data> <data>...");
+        puts("usage:cndf <iface (0-3)> <id> <data> <data>...");
         return 0;
     }
 

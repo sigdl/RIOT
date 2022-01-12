@@ -145,7 +145,7 @@ extern "C" {
 
 /*      -----      Timing Parameters        -----        */
 #ifndef CAN_NETDEV0_TIMING_NBR        /* Nominal Bit Rate in bits/sec           */
-#define CAN_NETDEV0_TIMING_NBR        250000
+#define CAN_NETDEV0_TIMING_NBR        50000
 #endif
 #ifndef CAN_NETDEV0_TIMING_CLOCK      /* Clock for CAN device in Hz             */
 #define CAN_NETDEV0_TIMING_CLOCK      CLOCK_APB1
@@ -181,10 +181,6 @@ extern "C" {
 #ifndef CAN_NETDEV0_BUFFER_RXNUM      /* Number of RX frame buffers             */
 #define CAN_NETDEV0_BUFFER_RXNUM      3
 #endif
-#ifndef CAN_NETDEV0_BUFFER_TXNUM      /* Number of TX frame buffers             */
-#define CAN_NETDEV0_BUFFER_TXNUM      3
-#endif
-
 
 
 #if 0

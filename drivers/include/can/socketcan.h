@@ -147,9 +147,6 @@ typedef struct {
     uint8_t     *rxbuf_wr;      /**< Pointer of last available RX frame         */
     uint8_t     *rxbuf_rd;      /**< Pointer of last processed RX frame         */
     can_frame_t *rxbuf;         /**< RX frame circular buffer                   */
-    uint8_t      txbuf_num;     /**< Num of TX buffer                           */
-    uint8_t     *txbuf_cnt;     /**< Counter to next available TX buffer        */
-    can_frame_t *txbuf;         /**< TX Buffers                                 */
 } socketcan_buffer_t;
 
 typedef struct {

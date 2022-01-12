@@ -85,8 +85,8 @@ int can_netdev_filterconf(can_netdev_t *dev,
                           uint32_t value1,
                           uint32_t value2);
 static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox);
-static void tx_isr(void *arg);
-static void sce_isr(void *arg);
+static inline void tx_isr(can_netdev_t *dev);
+static inline void sce_isr(can_netdev_t *dev);
 
 
 /*------------------------------------------------------------------------------*
@@ -197,6 +197,12 @@ void ISR_CAN1_TX(void)
     /* Obtain device's structure */
     can_netdev_t *dev = get_can_netdev(0);
 
+    /* Turn IRQ off */
+    NVIC_DisableIRQ(dev->eparams->irq_tx);
+
+    /* Turn interrupt flag OFF */
+    dev->eparams->device->IER &= ~CAN_IER_TMEIE;
+
     /* Signal TX interrupt */
     dev->flag_tx = 1;
 
@@ -218,6 +224,88 @@ void ISR_CAN1_SCE(void)
     netdev_trigger_event_isr(&dev->netdev);
 
     cortexm_isr_end();
+}
+
+/**
+ * @brief STM32 Socketcan driver ISR
+ *
+ * 
+ *
+ * @param[in]  dev          device descriptor
+ *
+ * @return                  0 on success
+ * @return                  <0 on error
+ */
+static void can_netdev_isr(netdev_t *netdev)
+{
+    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
+
+    DEBUG("[PERIPH CAN] isr(): Entering ISR in thread context\n");
+
+    /**********     RX0 interrupt     **********/
+    if(dev->flag_rx0) {
+
+        /* Turn IRQ flagg off */
+        dev->flag_rx0 = 0;
+
+        /* Process RX0 isr */
+        rx_isr(dev, 0);
+
+        /* Turn interrupt flags ON */
+        dev->eparams->device->IER |= CAN_IER_FOVIE0 |
+                                     CAN_IER_FFIE0  |
+                                     CAN_IER_FMPIE0;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx0);
+    }
+
+    /**********     RX1 interrupt     **********/
+    if(dev->flag_rx1) {
+
+        /* Turn IRQ flagg off */
+        dev->flag_rx1 = 0;
+
+        /* Process RX1 isr */
+        rx_isr(dev, 1);
+
+        /* Turn interrupt flags ON */
+        dev->eparams->device->IER |= CAN_IER_FOVIE1 |
+                                     CAN_IER_FFIE1  |
+                                     CAN_IER_FMPIE1;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx1);
+    }
+
+    /**********     TX  interrupt     **********/
+    if(dev->flag_tx) {
+
+        /* Turn IRQ flagg off */
+        dev->flag_tx = 0;
+
+        /* Process TX isr */
+        tx_isr(dev);
+
+        /* Turn interrupt flag ON */
+        dev->eparams->device->IER |= CAN_IER_TMEIE;
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_rx0);
+    }
+
+    /**********     SCE interrupt     **********/
+    if(dev->flag_sce) {
+
+        /* Turn IRQ flagg off */
+        dev->flag_sce = 0;
+
+        /* Process TX isr */
+        tx_isr(dev);
+
+        /* Turn IRQ on */
+        NVIC_EnableIRQ(dev->eparams->irq_sce);
+    }
 }
 
 static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
@@ -268,6 +356,10 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
                 dev->eparams->device->sFIFOMailBox[mailbox].RIR >> CAN_NETDEV_SFF_SHIFT;
         }
 
+#ifdef ENABLE_DEBUG
+        uint32_t debug_id = dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].id;
+        uint8_t  debug_buffer = *(dev->params->buffers.rxbuf_wr);
+#endif
         /* If REMOTE FRAME */
         if(dev->eparams->device->sFIFOMailBox[mailbox].RIR & CAN_RI0R_RTR ) {
 
@@ -306,108 +398,42 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
                 /* Wrap to beginning of buffer */
                 *(dev->params->buffers.rxbuf_wr) = 0;
             }
+
+#ifdef ENABLE_DEBUG
+            DEBUG("[PERIPH CAN] rx_isr(): Received CAN frame ID:%lx to buffer:%d bytes:%d=",
+                debug_id,
+                debug_buffer,
+                dlc
+            );
+            for(uint8_t k = 0; k < dlc; k++) {
+                DEBUG(" %x", dev->params->buffers.rxbuf[debug_buffer].data[k]);
+            }
+            DEBUG("\n");
+#endif
         }
 
         /* Release mailbox */
         *rfr |= CAN_NETDEV_RFOM_MASK;
     }
 
+    /* Signal event */
+    dev->netdev.event_callback(&dev->netdev, NETDEV_EVENT_RX_COMPLETE);
 }
 
-static inline void tx_isr(void *arg)
+static inline void tx_isr(can_netdev_t *dev)
 {
-    can_netdev_t *dev = arg;
 
-    /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->netdev);
+    DEBUG("[PERIPH CAN] tx_isr(): packet transmitted\n");
+
+    /* Signal event */
+    dev->netdev.event_callback(&dev->netdev, NETDEV_EVENT_TX_COMPLETE);
 }
 
-static inline void sce_isr(void *arg)
+static inline void sce_isr(can_netdev_t *dev)
 {
-    can_netdev_t *dev = arg;
-
-    /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->netdev);
+    dev++;
 }
 
-
-/**
- * @brief STM32 Socketcan driver ISR
- *
- * 
- *
- * @param[in]  dev          device descriptor
- *
- * @return                  0 on success
- * @return                  <0 on error
- */
-static void can_netdev_isr(netdev_t *netdev)
-{
-    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
-
-    DEBUG("[PERIPH CAN] isr: Entering ISR in thread context\n");
-
-    /**********     RX0 interrupt     **********/
-    if(dev->flag_rx0) {
-
-#ifdef ENABLE_DEBUG
-        LED1_ON;
-#endif
-
-        /* Turn IRQ flagg off */
-        dev->flag_rx0 = 0;
-
-        /* Process RX0 isr */
-        rx_isr(dev, 0);
-
-        /* Turn interrupt flags ON */
-        dev->eparams->device->IER |= CAN_IER_FOVIE0 |
-                                     CAN_IER_FFIE0  |
-                                     CAN_IER_FMPIE0;
-
-        /* Turn IRQ on */
-        NVIC_EnableIRQ(dev->eparams->irq_rx0);
-    }
-
-    /**********     RX1 interrupt     **********/
-    if(dev->flag_rx1) {
-
-        /* Turn IRQ off */
-        NVIC_DisableIRQ(dev->eparams->irq_rx1);
-
-        /* Turn IRQ flagg off */
-        dev->flag_rx1 = 0;
-
-        /* Turn IRQ on */
-        NVIC_EnableIRQ(dev->eparams->irq_rx1);
-    }
-
-    /**********     TX  interrupt     **********/
-    if(dev->flag_tx) {
-
-        /* Turn IRQ off */
-        NVIC_DisableIRQ(dev->eparams->irq_rx0);
-
-        /* Turn IRQ flagg off */
-        dev->flag_tx = 0;
-
-        /* Turn IRQ on */
-        NVIC_EnableIRQ(dev->eparams->irq_rx0);
-    }
-
-    /**********     SCE interrupt     **********/
-    if(dev->flag_sce) {
-
-        /* Turn IRQ off */
-        NVIC_DisableIRQ(dev->eparams->irq_sce);
-
-        /* Turn IRQ flagg off */
-        dev->flag_sce = 0;
-
-        /* Turn IRQ on */
-        NVIC_EnableIRQ(dev->eparams->irq_sce);
-    }
-}
 
 /**
  * @brief STM32 Socketcan driver receive function
