@@ -93,6 +93,11 @@ void auto_init(void)
         extern void gnrc_ipv6_init(void);
         gnrc_ipv6_init();
     }
+    if (IS_USED(MODULE_AUTO_INIT_GNRC_CAN)) {
+        LOG_DEBUG("Auto init gnrc_can.\n");
+        extern void gnrc_can_init(void);
+        gnrc_can_init();
+    }
     if (IS_USED(MODULE_AUTO_INIT_GNRC_UDP)) {
         LOG_DEBUG("Auto init gnrc_udp.\n");
         extern void gnrc_udp_init(void);

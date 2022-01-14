@@ -22,6 +22,7 @@ QUIET ?= 1
 # Modules to include:
 #USEMODULE += mcp2515net
 USEMODULE += periph_can_netdev
+USEMODULE += gnrc_can
 #USEMODULE += periph_eth
 USEMODULE += shell
 USEMODULE += shell_commands

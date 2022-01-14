@@ -49,8 +49,9 @@
 #include "net/gnrc/netif/internal.h"
 #include "net/gnrc/tx_sync.h"
 
-#define ENABLE_DEBUG 0
+#define ENABLE_DEBUG 1
 #include "debug.h"
+
 
 static void _update_l2addr_from_dev(gnrc_netif_t *netif);
 static void _check_netdev_capabilities(netdev_t *dev);
@@ -1455,6 +1456,8 @@ static void _test_options(gnrc_netif_t *netif)
             /* don't check MTU here for now since I'm not sure the current
              * one is correct ^^" "*/
             break;
+        case NETDEV_TYPE_CAN:
+            break;
         default:
             /* device type not supported yet, please amend case above when
              * porting new device type */
@@ -1717,50 +1720,64 @@ static void _send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt, bool push_back)
 
 static void *_gnrc_netif_thread(void *args)
 {
-    _netif_ctx_t *ctx = args;
+    _netif_ctx_t      *ctx = args;
     gnrc_netapi_opt_t *opt;
-    gnrc_netif_t *netif;
-    netdev_t *dev;
-    int res;
+    gnrc_netif_t      *netif;
+    netdev_t          *dev;
+    kernel_pid_t       thread_pid;
+    int                res;
+
     msg_t reply = { .type = GNRC_NETAPI_MSG_TYPE_ACK };
     msg_t msg_queue[GNRC_NETIF_MSG_QUEUE_SIZE];
 
-    DEBUG("gnrc_netif: starting thread %i\n", thread_getpid());
+    thread_pid = thread_getpid();
+    DEBUG("\ngnrc_netif: Starting thread %i\n", thread_pid);
+
     netif = ctx->netif;
     gnrc_netif_acquire(netif);
     dev = netif->dev;
-    netif->pid = thread_getpid();
+    netif->pid = thread_pid;
 
 #if IS_USED(MODULE_GNRC_NETIF_EVENTS)
-    netif->event_isr.handler = _event_handler_isr,
+    netif->event_isr.handler = _event_handler_isr;
+
     /* set up the event queue */
     event_queue_init(&netif->evq);
 #endif /* MODULE_GNRC_NETIF_EVENTS */
 
     /* setup the link-layer's message queue */
     msg_init_queue(msg_queue, GNRC_NETIF_MSG_QUEUE_SIZE);
+
     /* register the event callback with the device driver */
     dev->event_callback = _event_cb;
     dev->context = netif;
+
     /* initialize low-level driver */
     ctx->result = dev->driver->init(dev);
+
     /* signal that driver init is done */
     mutex_unlock(&ctx->init_done);
+
     if (ctx->result < 0) {
         LOG_ERROR("gnrc_netif: netdev init failed: %d\n", ctx->result);
         return NULL;
     }
     netif_register(&netif->netif);
     _check_netdev_capabilities(dev);
+
+    /* Initialize netif iface */
     netif->ops->init(netif);
+
 #if DEVELHELP
     assert(options_tested);
 #endif
 #ifdef MODULE_NETSTATS_L2
     memset(&netif->stats, 0, sizeof(netstats_t));
 #endif
+
     /* now let rest of GNRC use the interface */
     gnrc_netif_release(netif);
+
 #if (CONFIG_GNRC_NETIF_MIN_WAIT_AFTER_SEND_US > 0U)
     xtimer_ticks32_t last_wakeup = xtimer_now();
 #endif
@@ -1773,17 +1790,21 @@ static void *_gnrc_netif_thread(void *args)
 
         /* dispatch netdev, MAC and gnrc_netapi messages */
         DEBUG("gnrc_netif: message %u\n", (unsigned)msg.type);
+
         switch (msg.type) {
+
 #if IS_USED(MODULE_GNRC_NETIF_PKTQ)
             case GNRC_NETIF_PKTQ_DEQUEUE_MSG:
                 DEBUG("gnrc_netif: send from packet send queue\n");
                 _send_queued_pkt(netif);
                 break;
 #endif  /* IS_USED(MODULE_GNRC_NETIF_PKTQ) */
+
             case NETDEV_MSG_TYPE_EVENT:
                 DEBUG("gnrc_netif: GNRC_NETDEV_MSG_TYPE_EVENT received\n");
                 dev->driver->isr(dev);
                 break;
+
             case GNRC_NETAPI_MSG_TYPE_SND:
                 DEBUG("gnrc_netif: GNRC_NETDEV_MSG_TYPE_SND received\n");
                 _send(netif, msg.content.ptr, false);
@@ -1797,6 +1818,7 @@ static void *_gnrc_netif_thread(void *args)
                 last_wakeup = xtimer_now();
 #endif
                 break;
+
             case GNRC_NETAPI_MSG_TYPE_SET:
                 opt = msg.content.ptr;
 #ifdef MODULE_NETOPT
@@ -1812,6 +1834,7 @@ static void *_gnrc_netif_thread(void *args)
                 reply.content.value = (uint32_t)res;
                 msg_reply(&msg, &reply);
                 break;
+
             case GNRC_NETAPI_MSG_TYPE_GET:
                 opt = msg.content.ptr;
 #ifdef MODULE_NETOPT
@@ -1827,6 +1850,7 @@ static void *_gnrc_netif_thread(void *args)
                 reply.content.value = (uint32_t)res;
                 msg_reply(&msg, &reply);
                 break;
+
             default:
                 if (netif->ops->msg_handler) {
                     DEBUG("gnrc_netif: delegate message of type 0x%04x to "

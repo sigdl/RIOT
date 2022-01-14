@@ -23,7 +23,7 @@
 #include "log.h"
 #include "can_netdev.h"
 #include "can_netdev_params.h"
-#include "net/gnrc/netif/can.h"
+#include "net/gnrc/netif/can_netdev.h"
 #include "pm_layered.h"
 
 /*------------------------------------------------------------------------------*
@@ -86,7 +86,7 @@ void auto_init_can_netdev(void)
     uint8_t pm_level = 0;
 
     for (i = 0; i < CAN_NETDEV_NUM; i++) {
-        LOG_DEBUG("[auto_init_netif] initializing MCP2515net #%u\n", i);
+        LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
 
         /* If the configured PM level is above the previous one */
         if(can_netdev_params[i].pm.pm_level > pm_level) {

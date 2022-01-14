@@ -18,7 +18,7 @@
 
 #include "net/ethernet/hdr.h"
 #include "net/gnrc.h"
-#include "net/gnrc/netif/can.h"
+#include "net/gnrc/netif/can_netdev.h"
 #include "net/netdev/eth.h"
 
 #define ENABLE_DEBUG 0
@@ -51,7 +51,7 @@ int gnrc_netif_can_create(gnrc_netif_t  *netif,
                           int            stacksize,
                           char           priority,
                           char          *name,
-                          netdev_t      *dev
+                          netdev_t      *netdev
                          )
 {
     return gnrc_netif_create(netif,
@@ -59,7 +59,7 @@ int gnrc_netif_can_create(gnrc_netif_t  *netif,
                              stacksize,
                              priority,
                              name,
-                             dev,
+                             netdev,
                             &can_ops
                             );
 }
