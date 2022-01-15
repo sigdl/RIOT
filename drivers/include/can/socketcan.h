@@ -49,27 +49,6 @@ extern "C" {
 
 /** @} */
 
-/* CAN frame flags
- *
- * 7654 3210
- * dddd  tri
- *
- *  i = ID Extension
- *  0   Standard frame
- *  1   Extended frame
- *
- *  r = Remote Trasmit Request
- *  0   data frame
- *  1   remote frame
- *
- *  t = Trasmit Global Time
- *  0   No timestamp
- *  1   Timestamp trasmitted
- *
- *  dddd = Data Length Code
- *  0 - 8
- *
- */
 #define CAN_FLAG_IDE_MASK       0x01
 #define CAN_FLAG_IDE_SHIFT      0x00
 #define CAN_FLAG_IDE_STD        0x00
@@ -88,6 +67,23 @@ extern "C" {
 #define CAN_FLAG_DLC_MASK       0x0F
 #define CAN_FLAG_DLC_SHIFT      0x04
 
+#define CAN_IFACE_TYPE_Msk      0xF8
+#define CAN_IFACE_TYPE_Pos      3
+#define CAN_IFACE_TYPE_STM32    0x08
+#define CAN_IFACE_TYPE_ESP32    0x10
+#define CAN_IFACE_TYPE_MCP2515  0x18
+#define CAN_IFACE_TYPE_SJA1000  0x20
+
+#define CAN_IFACE_NUM_Msk       0x07
+#define CAN_IFACE_NUM_0         0x0
+#define CAN_IFACE_NUM_1         0x1
+#define CAN_IFACE_NUM_2         0x2
+#define CAN_IFACE_NUM_3         0x3
+#define CAN_IFACE_NUM_4         0x4
+#define CAN_IFACE_NUM_5         0x5
+#define CAN_IFACE_NUM_6         0x6
+#define CAN_IFACE_NUM_7         0x7
+
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
@@ -95,15 +91,30 @@ typedef enum {
     CAN_OPMODE_INIT,
     CAN_OPMODE_NORMAL,
     CAN_OPMODE_SLEEP,
-} can_opmode_t;
+} socketcan_opmode_t;
 
 /**
- * @brief   CAN Frame types
+ * @brief   Definition for SocketCAN Frame types
  */
-enum ca_frame_types {
+typedef enum {
     CAN_FRAME_STANDARD,
     CAN_FRAME_EXTENDED
-};
+} socketcan_frame_t;
+
+/**
+ * @brief   Definition for SocketCAN protocols
+ */
+typedef enum {
+    CAN_RAW = 1,            /**< Raw sockets                                    */
+    CAN_BCM,                /**< Bradcast Manager                               */
+    CAN_TP16,               /**< VAG Transport Protocol v1.6                    */
+    CAN_TP20,               /**< VAG Transport Protocol v2.0                    */
+    CAN_MCNET,              /**< Bosch MCNet                                    */
+    CAN_ISOTP,              /**< ISO 15765-2 Transport Protocol                 */
+    CAN_J1939,              /**< SAE J1939                                      */
+    CAN_NPROTO,             /**< No Protocol                                    */
+    CAN_OPEN,               /**< CANopen                                        */
+} socketcan_protocol_t;
 
 /**
  * @brief   Definition for CAN bittiming struct
@@ -134,13 +145,67 @@ enum ca_frame_types {
 
 /**
  * @brief   Definition for CAN frame struct
- *      
+ * 
+ * Flags
+ * =====
+ * 7654 3210
+ * dddd  tri
+ *
+ *  i = ID Extension
+ *  0   Standard frame
+ *  1   Extended frame
+ *
+ *  r = Remote Trasmit Request
+ *  0   data frame
+ *  1   remote frame
+ *
+ *  t = Trasmit Global Time
+ *  0   No timestamp
+ *  1   Timestamp trasmitted
+ *
+ *  dddd = Data Length Code
+ *  0 - 8
+ *
+ */
+
+/**
+ * @brief   Definition for SocketCAN identification
+ */
+typedef uint32_t canid_t;
+
+/**
+ * @brief   Definition for SocketCAN frame
  */
 typedef struct {
+    uint8_t  filter_num;        /**< Filter that allowed this frame             */
     uint32_t id;                /**< CAN ID                                     */
     uint8_t  flags;             /**< CAN frame flags                            */
+    uint8_t  filter;            /**< Matched filter                             */
     uint8_t  data[CAN_PAYLOAD] __attribute__((aligned(8)));
 } can_frame_t;
+
+/**
+ * @brief   Definition for SocketCAN interface
+ */
+typedef uint8_t socketcan_iface_t;
+
+/**
+ * @brief   Forward declaration for SocketCAN filter
+ * 
+ * Needed for recursive use in list of filters
+ */
+typedef struct can_filter can_filter_t;
+
+/**
+ * @brief   Definition for SocketCAN identification
+ */
+struct can_filter {
+    can_filter_t *next;         /**< Next filter in chain                       */
+    uint8_t       filter_num;   /**< Filter system number                       */
+    canid_t       can_id;       /**< Filter ID                                  */
+    canid_t       can_mask;     /**< Filter mask                                */
+    int         (*proto_handler)(can_frame_t *frame); /**< Protocol handler     */
+};
 
 typedef struct {
     uint8_t      rxbuf_num;     /**< Num of RX buffer                           */
@@ -162,7 +227,7 @@ typedef struct {
 } socketcan_timing_t;
 
 /**
- * @brief   Definition for CAN interface struct
+ * @brief   Definition for SocketCAN interface
  */
 typedef struct {
     spi_t       spi;            /**< Interface for SPI devices                  */
@@ -175,32 +240,44 @@ typedef struct {
     gpio_t      tx_pin;         /**< TX pin                                     */
     gpio_af_t   af_op;          /**< Alt pin function for normal operation      */
     gpio_af_t   af_ndiag;       /**< Alt pin function for network diagnostics   */
-} socketcan_iface_t;
+} socketcan_ifparams_t;
 
 /**
- * @brief   Definition for CAN power management struct
+ * @brief   Definition for SocketCAN power management
  */
 typedef struct {
     uint8_t     pm_level;       /**< PM block level                             */
 } socketcan_pm_t;
 
 /**
- * @brief   Definition for CAN parameters struct
+ * @brief   Forward declaration for SocketCAN sock
+ * 
+ * Needed for recursive use in list of socks
+ */
+typedef struct sock_can sock_can_t;
+
+/**
+ * @brief   Definition for SocketCAN parameters
  */
 typedef struct {
-    socketcan_timing_t  timing;     /**< CAN timing parameters                  */
-    socketcan_iface_t   iface;      /**< CAN interface parameters               */
-    socketcan_buffer_t  buffers;    /**< CAN buffers                            */
-    socketcan_pm_t      pm;         /**< CAN power management parameters        */
+    socketcan_iface_t    iface;      /**< CAN iface type and number             */
+    socketcan_ifparams_t ifparams;   /**< CAN interface parameters              */
+    socketcan_timing_t   timing;     /**< CAN timing parameters                 */
+    socketcan_buffer_t   buffers;    /**< CAN buffers                           */
+    socketcan_pm_t       pm;         /**< CAN power management parameters       */
+    sock_can_t          *first_sock; /**< First sock using this interface       */
 } socketcan_params_t;
 
 /**
- * @brief   Definition for CAN identification struct
+ * @brief   Definition for SocketCAN socket
  */
-typedef struct {
-    uint32_t            id;     /**< Full CAN ID                                */
-} can_id_t;
-
+struct sock_can {
+    sock_can_t           *next_sock;   /**< Next sock using this interface      */
+    uint8_t               num_filters; /**< Number of filter for this socket    */
+    can_filter_t         *filters;     /**< Filters array                       */
+    socketcan_buffer_t   *buffer;      /**< Frame buffer                        */
+    socketcan_protocol_t  protocol;    /**< Socket protocol                     */
+};
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/

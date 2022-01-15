@@ -57,6 +57,35 @@ extern "C" {
 #define GNRC_CAN_PRIO              (THREAD_PRIORITY_MAIN - 3)
 #endif
 
+/**
+ * @brief   Default message queue size to use for the CAN thread (as exponent
+ *          of 2^n).
+ *
+ *          As the queue size ALWAYS needs to be power of two, this option
+ *          represents the exponent of 2^n, which will be used as the size of
+ *          the queue.
+ */
+#ifndef CONFIG_GNRC_CAN_MSG_QUEUE_SIZE_EXP
+#define CONFIG_GNRC_CAN_MSG_QUEUE_SIZE_EXP    (3U)
+#endif
+
+/**
+ * @brief Message queue size to use for the IPv6 thread.
+ */
+#ifndef GNRC_CAN_MSG_QUEUE_SIZE
+#define GNRC_CAN_MSG_QUEUE_SIZE    (1 << CONFIG_GNRC_CAN_MSG_QUEUE_SIZE_EXP)
+#endif
+
+/**
+ * @brief   The PID to the CAN thread.
+ *
+ * @note    Use @ref gnrc_ipv6_init() to initialize. **Do not set by hand**.
+ *
+ * @details This variable is preferred for CAN internal communication *only*.
+ *          Please use @ref net_gnrc_netreg for external communication.
+ */
+extern kernel_pid_t gnrc_ipv6_pid;
+
 
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *

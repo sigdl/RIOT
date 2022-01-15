@@ -77,7 +77,7 @@ static int  can_netdev_send(netdev_t *netdev, const iolist_t *iolist);
 static int  can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *info);
 static int  can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
-static int  can_netdev_mode(can_netdev_t *dev, can_opmode_t mode);
+static int  can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode);
 int can_netdev_filterconf(can_netdev_t *dev,
                           uint8_t filter,
                           uint8_t fifo,
@@ -146,9 +146,6 @@ static int can_netdev_init(netdev_t *netdev)
  */
 void ISR_CAN1_RX0(void)
 {
-#ifdef ENABLE_DEBUG
-    LED0_ON;
-#endif
     /* Obtain device's structure */
     can_netdev_t *dev = get_can_netdev(0);
 
@@ -336,6 +333,10 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
 
         /* Initialize flags */
         flags = 0;
+
+        /* Store matching filter */
+        dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].filter =
+            (dev->eparams->device->sFIFOMailBox[mailbox].RDTR & CAN_RDT0R_FMI_Msk) >> CAN_RDT0R_FMI_Pos;
 
         /* If EXTENDED FRAME */
         if(dev->eparams->device->sFIFOMailBox[mailbox].RIR & CAN_RI0R_IDE) {
@@ -630,7 +631,7 @@ static int can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, siz
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_mode(can_netdev_t *dev, can_opmode_t mode)
+static int can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode)
 {
     uint32_t wait_cnt = MODE_MAX_DELAY;
     int resp = 0;
@@ -747,10 +748,10 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
 #endif /* CPU_FAM_STM32F0 */
 
     /* Init rx pin */
-    gpio_init(dev->params->iface.rx_pin, GPIO_IN);
+    gpio_init(dev->params->ifparams.rx_pin, GPIO_IN);
 
     /* Init tx pin */
-    gpio_init(dev->params->iface.tx_pin, GPIO_OUT);
+    gpio_init(dev->params->ifparams.tx_pin, GPIO_OUT);
 
     /* Selecting configuration */
     switch( mode ) {
@@ -768,10 +769,10 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
 
             /* Extra steps for pin configuration */
 #ifdef CPU_FAM_STM32F1
-            gpio_init_af(dev->params->iface.tx_pin, GPIO_AF_OUT_PP);
+            gpio_init_af(dev->params->ifparams.tx_pin, GPIO_AF_OUT_PP);
 #else
-            gpio_init_af(dev->params->iface.rx_pin, dev->params->iface.af_op);
-            gpio_init_af(dev->params->iface.tx_pin, dev->params->iface.af_op);
+            gpio_init_af(dev->params->ifparams.rx_pin, dev->params->ifparams.af_op);
+            gpio_init_af(dev->params->ifparams.tx_pin, dev->params->ifparams.af_op);
 #endif
             break;
 
@@ -779,7 +780,7 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
         case CAN_CONFMODE_NTEST:
 
             /* Set TX pin to 0 */
-            gpio_clear(dev->params->iface.tx_pin);
+            gpio_clear(dev->params->ifparams.tx_pin);
 
             break;
     }

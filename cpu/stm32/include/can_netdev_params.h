@@ -27,6 +27,7 @@
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
 #include "board.h"
+#include "can/socketcan.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -164,17 +165,21 @@ extern "C" {
 #endif
 
  /*     -----     Interface Parameters      -----     */
-#ifndef CAN_NETDEV0_IFACE_RXPIN
-#define CAN_NETDEV0_IFACE_RXPIN       GPIO_PIN(PORT_D, 0)
+#ifndef CAN_NETDEV0_IFACE
+#define CAN_NETDEV0_IFACE             CAN_IFACE_TYPE_STM32 | CAN_IFACE_NUM_0
 #endif
-#ifndef CAN_NETDEV0_IFACE_TXPIN
-#define CAN_NETDEV0_IFACE_TXPIN       GPIO_PIN(PORT_D, 1)
+
+#ifndef CAN_NETDEV0_IFPARAMS_RXPIN
+#define CAN_NETDEV0_IFPARAMS_RXPIN    GPIO_PIN(PORT_D, 0)
 #endif
-#ifndef CAN_NETDEV0_IFACE_AF_OP       /* AF for normal operation                */
-#define CAN_NETDEV0_IFACE_AF_OP       GPIO_AF9
+#ifndef CAN_NETDEV0_IFPARAMS_TXPIN
+#define CAN_NETDEV0_IFPARAMS_TXPIN    GPIO_PIN(PORT_D, 1)
 #endif
-#ifndef CAN_NETDEV0_IFACE_AF_NDIAG    /* AF for network diagnostics             */
-#define CAN_NETDEV0_IFACE_AF_NDIAG    GPIO_AF0
+#ifndef CAN_NETDEV0_IFPARAMS_AF_OP    /* AF for normal operation                */
+#define CAN_NETDEV0_IFPARAMS_AF_OP    GPIO_AF9
+#endif
+#ifndef CAN_NETDEV0_IFPARAMS_AF_NDIAG /* AF for network diagnostics             */
+#define CAN_NETDEV0_IFPARAMS_AF_NDIAG GPIO_AF0
 #endif
 
  /*     -----      Buffer Parameters       -----     */
@@ -191,6 +196,15 @@ extern "C" {
 #endif
 
 
+#ifndef CAN_NETDEV0_IFPARAMS
+#define CAN_NETDEV0_IFPARAMS             { \
+                                        .rx_pin       = CAN_NETDEV0_IFPARAMS_RXPIN, \
+                                        .tx_pin       = CAN_NETDEV0_IFPARAMS_TXPIN, \
+                                        .af_op        = CAN_NETDEV0_IFPARAMS_AF_OP, \
+                                        .af_ndiag     = CAN_NETDEV0_IFPARAMS_AF_NDIAG \
+                                      }
+#endif
+
 /* Variable parameters that must be in RAM */
 static uint32_t     nom_bitrate_0 = CAN_NETDEV0_TIMING_NBR;
 static uint32_t     r_bitrate_0;
@@ -206,15 +220,6 @@ static uint32_t     brp_0;
                                         .phseg1       = CAN_NETDEV0_TIMING_PS1, \
                                         .phseg2       = CAN_NETDEV0_TIMING_PS2, \
                                         .sjw          = CAN_NETDEV0_TIMING_SJW \
-                                      }
-#endif
-
-#ifndef CAN_NETDEV0_IFACE
-#define CAN_NETDEV0_IFACE             { \
-                                        .rx_pin       = CAN_NETDEV0_IFACE_RXPIN, \
-                                        .tx_pin       = CAN_NETDEV0_IFACE_TXPIN, \
-                                        .af_op        = CAN_NETDEV0_IFACE_AF_OP, \
-                                        .af_ndiag     = CAN_NETDEV0_IFACE_AF_NDIAG \
                                       }
 #endif
 
@@ -244,8 +249,9 @@ static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
 
 #ifndef CAN_NETDEV0_PARAMS
 #define CAN_NETDEV0_PARAMS            { \
-                                        .timing       = CAN_NETDEV0_TIMING, \
                                         .iface        = CAN_NETDEV0_IFACE, \
+                                        .ifparams     = CAN_NETDEV0_IFPARAMS, \
+                                        .timing       = CAN_NETDEV0_TIMING, \
                                         .buffers      = CAN_NETDEV0_BUFFERS, \
                                         .pm           = CAN_NETDEV0_PM \
                                       }

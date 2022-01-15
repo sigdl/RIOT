@@ -61,8 +61,42 @@ static char _stack[GNRC_CAN_STACK_SIZE + DEBUG_EXTRA_STACKSIZE];
  */
 static void *_event_loop(void *args)
 {
+    msg_t msg, reply, msg_q[GNRC_CAN_MSG_QUEUE_SIZE];
+
     (void)args;
 
+    msg_init_queue(msg_q, GNRC_CAN_MSG_QUEUE_SIZE);
+
+    /* preinitialize ACK */
+    reply.type = GNRC_NETAPI_MSG_TYPE_ACK;
+
+    /* start event loop */
+    while (1) {
+        DEBUG("CAN: waiting for incoming message.\n");
+        msg_receive(&msg);
+
+        switch (msg.type) {
+            case GNRC_NETAPI_MSG_TYPE_RCV:
+                DEBUG("CAN: GNRC_NETAPI_MSG_TYPE_RCV received\n");
+                /*_receive(msg.content.ptr);*/
+                break;
+
+            case GNRC_NETAPI_MSG_TYPE_SND:
+                DEBUG("CAN: GNRC_NETAPI_MSG_TYPE_SND received\n");
+                /*_send(msg.content.ptr, true);*/
+                break;
+
+            case GNRC_NETAPI_MSG_TYPE_GET:
+            case GNRC_NETAPI_MSG_TYPE_SET:
+                DEBUG("CAN: reply to unsupported get/set\n");
+                reply.content.value = -ENOTSUP;
+                msg_reply(&msg, &reply);
+                break;
+
+            default:
+                break;
+        }
+    }
 
     return NULL;
 }
