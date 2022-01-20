@@ -116,28 +116,21 @@ typedef struct {
     uint8_t          flag_rx1 : 1;        /**< Signals RX1 interrupt occured    */
     uint8_t          flag_tx  : 1;        /**< Signals TX  interrupt occured    */
     uint8_t          flag_sce : 1;        /**< Signals SCE interrupt occured    */
-    const socketcan_params_t   *params;   /**< CAN config                       */
-    const can_netdev_eparams_t *eparams;  /**< CAN extra config                 */
-#if 1
-    netdev_t                    netdev;   /**< Netdev config                    */
-#endif
+    socketcan_params_t    sparams;        /**< CAN config                       */
+    can_netdev_eparams_t *eparams;        /**< CAN extra config                 */
 } can_netdev_t;
 
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-void can_netdev_setup(can_netdev_t *dev,
-                      const socketcan_params_t   *params,
-                      const can_netdev_eparams_t *eparams,
-                      uint8_t index
-                     );
-int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode);
-int can_netdev_opconf(can_netdev_t *dev);
-int can_netdev_filterconf(can_netdev_t *dev,
-                          uint8_t filter,
-                          uint8_t fifo,
-                          can_netdev_filtermode_t mode,
-                          uint32_t value1,
-                          uint32_t value2);
+void can_netdev_setup(can_netdev_t *dev, uint8_t index);
+int  can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode);
+int  can_netdev_opconf(can_netdev_t *dev);
+int  can_netdev_filterconf(can_netdev_t *dev,
+                           uint8_t filter,
+                           uint8_t fifo,
+                           can_netdev_filtermode_t mode,
+                           uint32_t value1,
+                           uint32_t value2);
 can_netdev_t * get_can_netdev(int8_t device);
 #endif /* CAN_NETDEV_H */

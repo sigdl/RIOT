@@ -34,6 +34,7 @@ extern "C" {
 #include "periph/spi.h"
 #include "periph/gpio.h"
 #include "net/netdev.h"
+#include "net/gnrc/netif.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -253,12 +254,13 @@ typedef struct {
  * @brief   Definition for SocketCAN parameters
  */
 typedef struct {
-    socketcan_iface_t    iface;      /**< CAN iface type and number             */
-    socketcan_ifparams_t ifparams;   /**< CAN interface parameters              */
-    socketcan_timing_t   timing;     /**< CAN timing parameters                 */
-    socketcan_pm_t       pm;         /**< CAN power management parameters       */
-    netdev_t             netdev;     /**< Netdev config                         */
-    void                *first_sock; /**< First sock using this interface       */
+    socketcan_iface_t           iface;    /**< CAN iface type and number        */
+    const socketcan_ifparams_t *ifparams; /**< CAN interface parameters         */
+    const socketcan_timing_t   *timing;   /**< CAN timing parameters            */
+    socketcan_pm_t             *pm;       /**< CAN power management parameters  */
+    netdev_t                    netdev;   /**< Netdev config                    */
+    gnrc_netif_t                netif;    /**< Netif config                     */
+    void                       *first_sock; /**< 1st sock using this interface  */
 } socketcan_params_t;
 
 /*------------------------------------------------------------------------------*

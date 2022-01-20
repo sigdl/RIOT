@@ -103,12 +103,13 @@ static void *_event_loop(void *args)
 static void process_rcv(void *ptr)
 {
     netdev_t *netdev = (netdev_t *)ptr;
-    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
+    socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
+    can_netdev_t       *dev      = container_of(scparams, can_netdev_t,       sparams);
     sock_can_t *sock;
 
 
     /*Load first sock of this iface */
-    sock = dev->params->first_sock;
+    sock = dev->sparams.first_sock;
 
     /* If no sock */
     if(sock == NULL) {

@@ -30,9 +30,9 @@
  *                           Pre-processor Definitions                          *
  *------------------------------------------------------------------------------*/
 /**
- * @brief   Find out how many of these devices we need to care for
+ * @brief   Get number of periph can devices
  */
-#define CAN_NETDEV_NUM              ARRAY_SIZE(can_netdev_params)
+#define CAN_NETDEV_NUM              ARRAY_SIZE(pcan_ifparams)
 
 /**
  * @brief   Define stack parameters for the MAC layer thread
@@ -55,18 +55,17 @@
  *                                Private Data                                  *
  *------------------------------------------------------------------------------*/
 /**
- * @brief   Allocate memory for the device descriptors
+ * @brief   Array of device descriptors
  * @{
  */
-static can_netdev_t can_netdev_arr[CAN_NETDEV_NUM];
-static gnrc_netif_t can_netdev_netif[CAN_NETDEV_NUM];
+static can_netdev_t pcan_arr[CAN_NETDEV_NUM];
 
 /** @} */
 
 /**
- * @brief   Stacks for the MAC layer threads
+ * @brief   Array of stacks for MAC layer threads
  */
-static char can_netdev_stack[CAN_NETDEV_NUM][CAN_NETDEV_MAC_STACKSIZE];
+static char pcan_stack[CAN_NETDEV_NUM][CAN_NETDEV_MAC_STACKSIZE];
 
 
 /*------------------------------------------------------------------------------*
@@ -93,26 +92,32 @@ void auto_init_can_netdev(void)
     for (i = 0; i < CAN_NETDEV_NUM; i++) {
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
 
+        /* Populate pointers */
+        pcan_arr[i].sparams.ifparams = &pcan_ifparams[i];
+        pcan_arr[i].sparams.timing   = &pcan_timing[i];
+        pcan_arr[i].sparams.pm       = &pcan_pm[i];
+        pcan_arr[i].eparams          = &pcan_eparams[i];
+
         /* If the configured PM level is above the previous one */
-        if(can_netdev_params[i].pm.pm_level > pm_level) {
+        if(pcan_pm[i].pm_level > pm_level) {
 
             /* Adopt new higher level for the whole driver */
-            pm_level = can_netdev_params[i].pm.pm_level;
+            pm_level = pcan_pm[i].pm_level;
         }
 
         /* Add index to name */
         snprintf(iface_name, CONFIG_NETIF_NAMELENMAX, "%s%d", CAN_NETDEV_BNAME, i);
 
         /* setup netdev device */
-        can_netdev_setup(&can_netdev_arr[i], &can_netdev_params[i], &can_netdev_eparams[i], i);
+        can_netdev_setup(&pcan_arr[i], i);
 
         /* Create network interface */
-        gnrc_netif_can_create(&can_netdev_netif[i],
-                               can_netdev_stack[i],
+        gnrc_netif_can_create(&pcan_arr[i].sparams.netif,
+                               pcan_stack[i],
                                CAN_NETDEV_MAC_STACKSIZE,
                                CAN_NETDEV_MAC_PRIO,
                                iface_name,
-                              &can_netdev_arr[i].netdev);
+                              &pcan_arr[i].sparams.netdev);
     }
 
     /* Set the minimum power level */
@@ -121,5 +126,5 @@ void auto_init_can_netdev(void)
 
 inline can_netdev_t * get_can_netdev(int8_t device)
 {
-    return &can_netdev_arr[device];
+    return &pcan_arr[device];
 }

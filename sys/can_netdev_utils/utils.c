@@ -189,14 +189,14 @@ int can_netdev_test(int argc, char **argv)
             DEBUG("can_netdev_test: Setting TX pin to 0\n");
 
             /* Set TX pin to 0 */
-            gpio_clear(dev->params->iface.tx_pin);
+            gpio_clear(dev->sparams.ifparams->tx_pin);
             break;
     
         case CAN_TEST_1:
             DEBUG("can_netdev_test: Setting TX pin to 1\n");
 
             /* Set TX pin to 1 */
-            gpio_set(dev->params->iface.tx_pin);
+            gpio_set(dev->sparams.ifparams->tx_pin);
             break;
     
         case CAN_TEST_500:
@@ -205,7 +205,7 @@ int can_netdev_test(int argc, char **argv)
             /* Cycle */
             while (1) {
                 /* Toggle output */
-                gpio_toggle(dev->params->iface.tx_pin);
+                gpio_toggle(dev->sparams.ifparams->tx_pin);
             }
             break;
 
@@ -220,7 +220,7 @@ int can_netdev_test(int argc, char **argv)
                 }
 
                 /* Toggle output */
-                gpio_toggle(dev->params->iface.tx_pin);
+                gpio_toggle(dev->sparams.ifparams->tx_pin);
             }
     }
 
@@ -572,7 +572,7 @@ int can_netdev_frame(int argc, char **argv)
 
     DEBUG("Sending frame to iface %d with id %lu and dlc = %d\n", device, frame.id, argc - 3);
 
-    dev->netdev.driver->send(&dev->netdev, &iolist);
+    dev->sparams.netdev.driver->send(&dev->sparams.netdev, &iolist);
 
     return 0;
 }
