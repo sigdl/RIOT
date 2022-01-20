@@ -31,6 +31,7 @@
 #include "assert.h"
 
 #include "can_netdev.h"
+#include "net/sock/can.h"
 
 #define ENABLE_DEBUG            1
 #include "debug.h"
@@ -63,6 +64,16 @@
     #define ISR_CAN3_SCE        isr_can3_sce
 #endif
 
+#if 0
+#define container_of(PTR, TYPE, MEMBER) \
+        (_Generic((PTR), \
+            const __typeof__ (((TYPE *) 0)->MEMBER) *: \
+                ((TYPE *) ((uintptr_t) (PTR) - offsetof(TYPE, MEMBER))), \
+            __typeof__ (((TYPE *) 0)->MEMBER) *: \
+                ((TYPE *) ((uintptr_t) (PTR) - offsetof(TYPE, MEMBER))) \
+        ))
+#endif
+
 /*------------------------------------------------------------------------------*
  *                                 Private Types                                *
  *------------------------------------------------------------------------------*/
@@ -78,6 +89,7 @@ static int  can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *i
 static int  can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode);
+static int  can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t filter);
 int can_netdev_filterconf(can_netdev_t *dev,
                           uint8_t filter,
                           uint8_t fifo,
@@ -115,7 +127,9 @@ static const netdev_driver_t can_netdev_driver = {
  */
 static int can_netdev_init(netdev_t *netdev)
 {
-    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
+    /*socketcan_params_t *params = container_of(netdev, socketcan_params_t, netdev);*/
+    can_netdev_t       *dev    = container_of(netdev, can_netdev_t, netdev);
+
 
     /*Disable interrupts before changing anything*/
 #if defined(CPU_FAM_STM32F0)
@@ -307,8 +321,11 @@ static void can_netdev_isr(netdev_t *netdev)
 
 static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
 {
+    int           resp;
     uint8_t       flags;
     uint8_t       dlc;
+    uint8_t       filter;
+    sock_can_t   *sock = NULL;
     uint8_t       i;
     volatile uint32_t *rfr;
 
@@ -335,14 +352,23 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
         flags = 0;
 
         /* Store matching filter */
-        dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].filter =
-            (dev->eparams->device->sFIFOMailBox[mailbox].RDTR & CAN_RDT0R_FMI_Msk) >> CAN_RDT0R_FMI_Pos;
+        filter = (dev->eparams->device->sFIFOMailBox[mailbox].RDTR & CAN_RDT0R_FMI_Msk) >> CAN_RDT0R_FMI_Pos;
+
+        /* Search for this filter */
+        resp = can_netdev_findfilter(dev, sock, filter);
+
+        /* If no associated sock found */
+        if(resp < 0) {
+
+            /* There's no moro to do */
+            return;
+        }
 
         /* If EXTENDED FRAME */
         if(dev->eparams->device->sFIFOMailBox[mailbox].RIR & CAN_RI0R_IDE) {
 
             /* Save Extended ID */
-            dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].id =
+            sock->buffer->rxbuf[sock->buffer->rxbuf_wr].id =
                 dev->eparams->device->sFIFOMailBox[mailbox].RIR >> CAN_NETDEV_EFF_SHIFT;
 
             /* Save corresponding flag */
@@ -353,13 +379,13 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
         else {
 
             /* Save Standard ID */
-            dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].id =
+            sock->buffer->rxbuf[sock->buffer->rxbuf_wr].id =
                 dev->eparams->device->sFIFOMailBox[mailbox].RIR >> CAN_NETDEV_SFF_SHIFT;
         }
 
 #ifdef ENABLE_DEBUG
-        uint32_t debug_id = dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].id;
-        uint8_t  debug_buffer = *(dev->params->buffers.rxbuf_wr);
+        uint32_t debug_id = sock->buffer->rxbuf[sock->buffer->rxbuf_wr].id;
+        uint8_t  debug_buffer = sock->buffer->rxbuf_wr;
 #endif
         /* If REMOTE FRAME */
         if(dev->eparams->device->sFIFOMailBox[mailbox].RIR & CAN_RI0R_RTR ) {
@@ -379,25 +405,25 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
 
             /* Save data */
             for(i = 0; i < 4 && i < dlc; i++) {
-                dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].data[i] =
+                sock->buffer->rxbuf[sock->buffer->rxbuf_wr].data[i] =
                     (dev->eparams->device->sFIFOMailBox[mailbox].RDLR >> (i * 8)) & 0xFF;
             }
             for(i = 0; i < 4 && i + 4 < dlc; i++) {
-                dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].data[i + 4] =
+                sock->buffer->rxbuf[sock->buffer->rxbuf_wr].data[i + 4] =
                     (dev->eparams->device->sFIFOMailBox[mailbox].RDHR >> (i * 8)) & 0xFF;
             }
 
             /* Save flags */
-            dev->params->buffers.rxbuf[*(dev->params->buffers.rxbuf_wr)].flags = flags;
+            sock->buffer->rxbuf[sock->buffer->rxbuf_wr].flags = flags;
 
             /* Inc frame pointer */
-            (*(dev->params->buffers.rxbuf_wr))++;
+            (sock->buffer->rxbuf_wr)++;
 
             /* If got to end of buffer */
-            if(*(dev->params->buffers.rxbuf_wr) == dev->params->buffers.rxbuf_num ) {
+            if(sock->buffer->rxbuf_wr == sock->buffer->rxbuf_num ) {
 
                 /* Wrap to beginning of buffer */
-                *(dev->params->buffers.rxbuf_wr) = 0;
+                sock->buffer->rxbuf_wr = 0;
             }
 
 #ifdef ENABLE_DEBUG
@@ -407,7 +433,7 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
                 dlc
             );
             for(uint8_t k = 0; k < dlc; k++) {
-                DEBUG(" %x", dev->params->buffers.rxbuf[debug_buffer].data[k]);
+                DEBUG(" %x", sock->buffer->rxbuf[debug_buffer].data[k]);
             }
             DEBUG("\n");
 #endif
@@ -690,6 +716,55 @@ static int can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode)
     return resp;
 }
 
+/**
+ * @brief STM32 CAN filter search function
+ *
+ * This function searches in all associated socks for filter fx
+ *
+ * @param[in]   dev         device descriptor
+ * @param[in]   filter      filter of interest
+ * @param[out]  sock        sock with filter of interest
+ *
+ * @return                  0 on success
+ * @return                  <0 on error
+ */
+static int can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t filter)
+{
+    uint8_t i;
+
+
+    /*Load first sock of this iface */
+    sock = dev->params->first_sock;
+
+    /* If no sock */
+    if(sock == NULL) {
+
+        /* Return failure */
+        return -ENODATA;
+    }
+
+    /* Cycle through sock list */
+    while(sock != NULL) {
+
+        /* Cycle through filters */
+        for(i = 0; i < sock->num_filters; i++) {
+
+            /* if filter is found */
+            if(sock->filters[i].filter_num == filter) {
+
+                /* Return sucess */
+                return 0;
+            }
+        }
+
+        /*Load next filter of this iface */
+        sock = sock->next_sock;
+    }
+
+    /* Return failure */
+    return -ENODATA;
+
+}
 
 /*------------------------------------------------------------------------------*
  *                                 Public Data                                  *
@@ -725,7 +800,7 @@ void can_netdev_setup(can_netdev_t *dev,
     mutex_init(&dev->lock);
 
     /* Register device */
-    netdev_register(&dev->netdev, NETDEV_MCP2515, index);
+    netdev_register(&dev->netdev, NETDEV_STM32_CAN, index);
 }
 
 /**

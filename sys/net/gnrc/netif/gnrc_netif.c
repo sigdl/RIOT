@@ -1762,7 +1762,10 @@ static void *_gnrc_netif_thread(void *args)
         LOG_ERROR("gnrc_netif: netdev init failed: %d\n", ctx->result);
         return NULL;
     }
+
+    /* Register to netif global register */
     netif_register(&netif->netif);
+    
     _check_netdev_capabilities(dev);
 
     /* Initialize netif iface */

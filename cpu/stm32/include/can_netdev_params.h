@@ -195,7 +195,6 @@ extern "C" {
 #endif
 #endif
 
-
 #ifndef CAN_NETDEV0_IFPARAMS
 #define CAN_NETDEV0_IFPARAMS             { \
                                         .rx_pin       = CAN_NETDEV0_IFPARAMS_RXPIN, \
@@ -223,15 +222,6 @@ static uint32_t     brp_0;
                                       }
 #endif
 
-/* Variable parameters that must be in RAM */
-static uint8_t      rxbuf_0_wr = 0;
-static uint8_t      rxbuf_0_rd = 0;
-static can_frame_t  rxbuf_0[CAN_NETDEV0_BUFFER_RXNUM];
-#if 0
-static uint8_t      txbuf_cnt_0 = 0;
-static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
-#endif
-
 #ifndef CAN_NETDEV0_BUFFERS
 #define CAN_NETDEV0_BUFFERS           { \
                                         .rxbuf_num    = CAN_NETDEV0_BUFFER_RXNUM, \
@@ -252,7 +242,6 @@ static can_frame_t  txbuf_0[CAN_NETDEV0_BUFFER_TXNUM];
                                         .iface        = CAN_NETDEV0_IFACE, \
                                         .ifparams     = CAN_NETDEV0_IFPARAMS, \
                                         .timing       = CAN_NETDEV0_TIMING, \
-                                        .buffers      = CAN_NETDEV0_BUFFERS, \
                                         .pm           = CAN_NETDEV0_PM \
                                       }
 #endif

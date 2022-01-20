@@ -23,18 +23,8 @@
 /*------------------------------------------------------------------------------*
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
-#include <assert.h>
-#include <string.h>
-
-#include "net/gnrc.h"
-#include "net/gnrc/netif/can_netdev.h"
-
-#define ENABLE_DEBUG 0
-#include "debug.h"
-
-#if defined(MODULE_OD) && ENABLE_DEBUG
-#include "od.h"
-#endif
+#include "net/sock/can.h"
+#include "net/netif.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -47,61 +37,23 @@
 /*------------------------------------------------------------------------------*
  *                          Private Function Prototypes                         *
  *------------------------------------------------------------------------------*/
-static int can_netif_send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt);
-static gnrc_pktsnip_t *can_netif_recv(gnrc_netif_t *netif);
-
 
 /*------------------------------------------------------------------------------*
  *                                Private Data                                  *
  *------------------------------------------------------------------------------*/
-static const gnrc_netif_ops_t can_ops = {
-    .init = gnrc_netif_default_init,
-    .send = can_netif_send,
-    .recv = can_netif_recv,
-    .get  = gnrc_netif_get_from_netdev,
-    .set  = gnrc_netif_set_from_netdev,
-};
-extern kernel_pid_t gnrc_can_pid;
 
 /*------------------------------------------------------------------------------*
  *                               Private Functions                              *
  *------------------------------------------------------------------------------*/
-static int can_netif_send(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
-{
-
-    netdev_t *dev = netif->dev;
-
-    (void)dev;
-    (void)pkt;
-
-    return 0;
-}
-
-static gnrc_pktsnip_t *can_netif_recv(gnrc_netif_t *netif)
-{
-    int       resp;
-    netdev_t *netdev = netif->dev;
-    msg_t     msg;
-
-
-    /* Msg type is RCV */
-    msg.type = GNRC_NETAPI_MSG_TYPE_RCV;
-
-    /* Msg content is netif descriptor */
-    msg.content.ptr = (void *)netdev;
-
-    /* send message */
-    resp = msg_try_send(&msg, gnrc_can_pid);
-
-    if (resp < 1) {
-        DEBUG("gnrc_netapi: dropped message to %" PRIkernel_pid " (%s)\n", gnrc_can_pid,
-              (resp == 0) ? "receiver queue is full" : "invalid receiver");
-    }
-
-    /* Returning null cancells the rest of default pkt processing in cb function */
-    return NULL;
-}
-
+/**
+ * @brief STM32 Socketcan driver Init function
+ *
+ *
+ * @param[in]  
+ *
+ * @return     
+ * @return     
+ */
 
 /*------------------------------------------------------------------------------*
  *                                 Public Data                                  *
@@ -111,27 +63,45 @@ static gnrc_pktsnip_t *can_netif_recv(gnrc_netif_t *netif)
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
 /**
- * @brief   .
+ * @brief   .Create a CAN sock from a socketcan iface
  *
- * @param[in]               .
- * @param[in]               .
- * @param[in]               .
+ * @param[in] iface         SocketCAN iface
+ * @param[in] sock          Pointer to CAN sock structure
+ * @param[in] filter        Pointer to filter to use
+ * @param[in] buffer        Pointer to frame buffer
+ * @param[in] protocol      CAN upper protocol
+ * @param[in] cb            App's call back function
  *                          
  */
-int gnrc_netif_can_create(gnrc_netif_t  *netif, 
-                          char          *stack,
-                          int            stacksize,
-                          char           priority,
-                          char          *name,
-                          netdev_t      *netdev
-                         )
+int sock_can_create(sock_can_t          *sock,
+                    char                *iface_name,
+                    can_filter_t        *filter,
+                    socketcan_buffer_t  *buffer,
+                    socketcan_protocol_t protocol,
+                    sock_can_cb_t        cb
+                    )
 {
-    return gnrc_netif_create(netif,
-                             stack,
-                             stacksize,
-                             priority,
-                             name,
-                             netdev,
-                            &can_ops
-                            );
+    /*netif_t             *ndevice;
+    socketcan_params_t  *params;*/
+
+    /* Evaluate parameters */
+    assert(sock);
+    assert(filter);
+    assert(buffer);
+    assert(protocol);
+
+    (void)cb;
+    (void)iface_name;
+#if 0
+    /* Get netif device */
+    ndevice = netif_get_by_name_buffer(iface_name, CONFIG_NETIF_NAMELENMAX);
+
+    /* Get netif device */
+    gnrc_netif_t netiface = container_of(ndevice, gnrc_netif_t, netif);
+
+    /* Get socketcan device */
+    can_netdev_t *dev = container_of(netiface, can_netdev_t, netdev);
+#endif
+    
+    return 0;
 }

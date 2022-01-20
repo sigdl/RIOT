@@ -84,6 +84,11 @@ void auto_init_can_netdev(void)
 {
     uint8_t i;
     uint8_t pm_level = 0;
+    char    iface_name[CONFIG_NETIF_NAMELENMAX + 1];
+
+
+    /* Copy basic name lefting space for device index and NULL */
+    strncpy(iface_name, CAN_NETDEV_BNAME, CONFIG_NETIF_NAMELENMAX - 2);
 
     for (i = 0; i < CAN_NETDEV_NUM; i++) {
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
@@ -95,15 +100,18 @@ void auto_init_can_netdev(void)
             pm_level = can_netdev_params[i].pm.pm_level;
         }
 
+        /* Add index to name */
+        snprintf(iface_name, CONFIG_NETIF_NAMELENMAX, "%s%d", CAN_NETDEV_BNAME, i);
+
         /* setup netdev device */
         can_netdev_setup(&can_netdev_arr[i], &can_netdev_params[i], &can_netdev_eparams[i], i);
 
         /* Create network interface */
         gnrc_netif_can_create(&can_netdev_netif[i],
-                              can_netdev_stack[i],
-                              CAN_NETDEV_MAC_STACKSIZE,
-                              CAN_NETDEV_MAC_PRIO,
-                              "periph_can",
+                               can_netdev_stack[i],
+                               CAN_NETDEV_MAC_STACKSIZE,
+                               CAN_NETDEV_MAC_PRIO,
+                               iface_name,
                               &can_netdev_arr[i].netdev);
     }
 

@@ -139,6 +139,9 @@ endif
 ifneq (,$(filter gnrc_sock_tcp,$(USEMODULE)))
   DIRS += sock/tcp
 endif
+ifneq (,$(filter gnrc_sock_can,$(USEMODULE)))
+  DIRS += sock/can
+endif
 ifneq (,$(filter gnrc_udp,$(USEMODULE)))
   DIRS += transport_layer/udp
 endif

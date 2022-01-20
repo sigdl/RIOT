@@ -31,8 +31,9 @@ extern "C" {
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
 #include "sched.h"
-#include "net/gnrc.h"
 #include "thread.h"
+#include "net/gnrc.h"
+#include "can_netdev.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -84,7 +85,7 @@ extern "C" {
  * @details This variable is preferred for CAN internal communication *only*.
  *          Please use @ref net_gnrc_netreg for external communication.
  */
-extern kernel_pid_t gnrc_ipv6_pid;
+extern kernel_pid_t gnrc_can_pid;
 
 
 /*------------------------------------------------------------------------------*

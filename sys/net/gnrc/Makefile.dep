@@ -401,6 +401,8 @@ ifneq (,$(filter gnrc_can,$(USEMODULE)))
   USEMODULE += gnrc_netif
   USEMODULE += gnrc_netif_can
   USEMODULE += gnrc_nettype_can
+  USEMODULE += gnrc_sock
+  USEMODULE += gnrc_sock_can
 endif
 
 ifneq (,$(filter gnrc,$(USEMODULE)))

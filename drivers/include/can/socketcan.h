@@ -209,8 +209,8 @@ struct can_filter {
 
 typedef struct {
     uint8_t      rxbuf_num;     /**< Num of RX buffer                           */
-    uint8_t     *rxbuf_wr;      /**< Pointer of last available RX frame         */
-    uint8_t     *rxbuf_rd;      /**< Pointer of last processed RX frame         */
+    uint8_t      rxbuf_wr;      /**< Pointer of last available RX frame         */
+    uint8_t      rxbuf_rd;      /**< Pointer of last processed RX frame         */
     can_frame_t *rxbuf;         /**< RX frame circular buffer                   */
 } socketcan_buffer_t;
 
@@ -250,34 +250,17 @@ typedef struct {
 } socketcan_pm_t;
 
 /**
- * @brief   Forward declaration for SocketCAN sock
- * 
- * Needed for recursive use in list of socks
- */
-typedef struct sock_can sock_can_t;
-
-/**
  * @brief   Definition for SocketCAN parameters
  */
 typedef struct {
     socketcan_iface_t    iface;      /**< CAN iface type and number             */
     socketcan_ifparams_t ifparams;   /**< CAN interface parameters              */
     socketcan_timing_t   timing;     /**< CAN timing parameters                 */
-    socketcan_buffer_t   buffers;    /**< CAN buffers                           */
     socketcan_pm_t       pm;         /**< CAN power management parameters       */
-    sock_can_t          *first_sock; /**< First sock using this interface       */
+    netdev_t             netdev;     /**< Netdev config                         */
+    void                *first_sock; /**< First sock using this interface       */
 } socketcan_params_t;
 
-/**
- * @brief   Definition for SocketCAN socket
- */
-struct sock_can {
-    sock_can_t           *next_sock;   /**< Next sock using this interface      */
-    uint8_t               num_filters; /**< Number of filter for this socket    */
-    can_filter_t         *filters;     /**< Filters array                       */
-    socketcan_buffer_t   *buffer;      /**< Frame buffer                        */
-    socketcan_protocol_t  protocol;    /**< Socket protocol                     */
-};
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/

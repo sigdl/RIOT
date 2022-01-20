@@ -25,6 +25,7 @@
  *------------------------------------------------------------------------------*/
 #include "sched.h"
 #include "net/gnrc/can.h"
+#include "net/sock/can.h"
 
 #define ENABLE_DEBUG        1
 #include "debug.h"
@@ -41,6 +42,7 @@
  *                          Private Function Prototypes                         *
  *------------------------------------------------------------------------------*/
 static void *_event_loop(void *args);
+static void process_rcv(void *ptr);
 
 /*------------------------------------------------------------------------------*
  *                                Private Data                                  *
@@ -51,13 +53,7 @@ static char _stack[GNRC_CAN_STACK_SIZE + DEBUG_EXTRA_STACKSIZE];
  *                               Private Functions                              *
  *------------------------------------------------------------------------------*/
 /**
- * @brief STM32 Socketcan driver Init function
- *
- *
- * @param[in]               .
- *
- * @return                  
- * @return                  
+ * @brief CAN Protocol event loop
  */
 static void *_event_loop(void *args)
 {
@@ -78,7 +74,7 @@ static void *_event_loop(void *args)
         switch (msg.type) {
             case GNRC_NETAPI_MSG_TYPE_RCV:
                 DEBUG("CAN: GNRC_NETAPI_MSG_TYPE_RCV received\n");
-                /*_receive(msg.content.ptr);*/
+                process_rcv(msg.content.ptr);
                 break;
 
             case GNRC_NETAPI_MSG_TYPE_SND:
@@ -99,6 +95,38 @@ static void *_event_loop(void *args)
     }
 
     return NULL;
+}
+
+/**
+ * @brief CAN Protocol event loop
+ */
+static void process_rcv(void *ptr)
+{
+    netdev_t *netdev = (netdev_t *)ptr;
+    can_netdev_t *dev = container_of(netdev, can_netdev_t, netdev);
+    sock_can_t *sock;
+
+
+    /*Load first sock of this iface */
+    sock = dev->params->first_sock;
+
+    /* If no sock */
+    if(sock == NULL) {
+
+        /* Return failure */
+        return;
+    }
+
+    /* Cycle through sock list */
+    while(sock != NULL) {
+
+        /*  */
+
+        /*Load next filter of this iface */
+        sock = sock->next_sock;
+    }
+
+    return;
 }
 
 /*------------------------------------------------------------------------------*

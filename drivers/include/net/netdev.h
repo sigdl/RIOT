@@ -310,7 +310,6 @@ typedef enum {
     NETDEV_CC2538,
     NETDEV_DOSE,
     NETDEV_ENC28J60,
-    NETDEV_MCP2515,
     NETDEV_KW41ZRF,
     NETDEV_MRF24J40,
     NETDEV_NRF802154,
@@ -325,6 +324,8 @@ typedef enum {
     NETDEV_CC2420,
     NETDEV_ETHOS,
     NETDEV_SLIPDEV,
+    NETDEV_STM32_CAN,
+    NETDEV_MCP2515,
     /* add more if needed */
 } netdev_type_t;
 /** @} */

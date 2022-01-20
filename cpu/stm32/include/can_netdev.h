@@ -36,6 +36,12 @@
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
  *------------------------------------------------------------------------------*/
+/**
+ * @brief Basic name less than CONFIG_NETIF_NAMELENMAX - 2 to leave space for index
+ * 
+ */
+#define CAN_NETDEV_BNAME        "pcan"
+
 #define CAN_NETDEV_SFF_SHIFT    21
 #define CAN_NETDEV_EFF_SHIFT    3
 #define CAN_NETDEV_FMP_MASK     0x03
@@ -112,7 +118,9 @@ typedef struct {
     uint8_t          flag_sce : 1;        /**< Signals SCE interrupt occured    */
     const socketcan_params_t   *params;   /**< CAN config                       */
     const can_netdev_eparams_t *eparams;  /**< CAN extra config                 */
+#if 1
     netdev_t                    netdev;   /**< Netdev config                    */
+#endif
 } can_netdev_t;
 
 /*------------------------------------------------------------------------------*
