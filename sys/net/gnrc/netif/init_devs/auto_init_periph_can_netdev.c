@@ -92,18 +92,14 @@ void auto_init_can_netdev(void)
     for (i = 0; i < CAN_NETDEV_NUM; i++) {
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
 
+        /* Config iface type and number */
+        pcan_arr[i].sparams.iface    = pcan_iface[i];
+
         /* Populate pointers */
         pcan_arr[i].sparams.ifparams = &pcan_ifparams[i];
         pcan_arr[i].sparams.timing   = &pcan_timing[i];
         pcan_arr[i].sparams.pm       = &pcan_pm[i];
         pcan_arr[i].eparams          = &pcan_eparams[i];
-
-        /* If the configured PM level is above the previous one */
-        if(pcan_pm[i].pm_level > pm_level) {
-
-            /* Adopt new higher level for the whole driver */
-            pm_level = pcan_pm[i].pm_level;
-        }
 
         /* Add index to name */
         snprintf(iface_name, CONFIG_NETIF_NAMELENMAX, "%s%d", CAN_NETDEV_BNAME, i);
@@ -117,7 +113,15 @@ void auto_init_can_netdev(void)
                                CAN_NETDEV_MAC_STACKSIZE,
                                CAN_NETDEV_MAC_PRIO,
                                iface_name,
-                              &pcan_arr[i].sparams.netdev);
+                              &pcan_arr[i].sparams.netdev
+                             );
+
+        /* If the configured PM level is above the previous one */
+        if(pcan_pm[i].pm_level > pm_level) {
+
+            /* Adopt new higher level for the whole driver */
+            pm_level = pcan_pm[i].pm_level;
+        }
     }
 
     /* Set the minimum power level */

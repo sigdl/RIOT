@@ -25,6 +25,7 @@
  *------------------------------------------------------------------------------*/
 #include "net/sock/can.h"
 #include "net/netif.h"
+#include "can_netdev.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -73,35 +74,54 @@
  * @param[in] cb            App's call back function
  *                          
  */
-int sock_can_create(sock_can_t          *sock,
-                    char                *iface_name,
-                    can_filter_t        *filter,
-                    socketcan_buffer_t  *buffer,
-                    socketcan_protocol_t protocol,
-                    sock_can_cb_t        cb
-                    )
+int sock_can_create(sock_can_t *sock, char *iface_name)
 {
-    /*netif_t             *ndevice;
-    socketcan_params_t  *params;*/
+    netif_t        *ndevice;
+    gnrc_netif_t   *netiface;
+    can_netdev_t   *dev;
+    uint8_t         i;
+    int             resp;
+    uint8_t         iface_type;
+
 
     /* Evaluate parameters */
     assert(sock);
-    assert(filter);
-    assert(buffer);
-    assert(protocol);
 
-    (void)cb;
-    (void)iface_name;
-#if 0
     /* Get netif device */
     ndevice = netif_get_by_name_buffer(iface_name, CONFIG_NETIF_NAMELENMAX);
 
-    /* Get netif device */
-    gnrc_netif_t netiface = container_of(ndevice, gnrc_netif_t, netif);
+    /* If no device found */
+    if(ndevice == NULL) {
+        return -ENODEV;
+    }
 
-    /* Get socketcan device */
-    can_netdev_t *dev = container_of(netiface, can_netdev_t, netdev);
-#endif
-    
+    /* Get containers */
+    netiface = container_of(ndevice, gnrc_netif_t, netif);
+    sock->scparams = container_of(netiface, socketcan_params_t, netif);
+    dev = container_of(sock->scparams, can_netdev_t, sparams);
+
+    /* Get iface type */
+    iface_type = sock->scparams->iface & CAN_IFACE_TYPE_Msk;
+
+    /* Loop through filters */
+    for(i = 0; i < sock->num_filters; i++) {
+
+        switch(iface_type) {
+
+            case CAN_IFACE_TYPE_STM32:
+                resp = pcan_filterconf(dev, &sock->filters[i]);
+                break;
+        }
+
+        /* If there is an error */
+        if(resp < 0) {
+
+            /* Return error */
+            return resp;
+        }
+    }
+
+
+
     return 0;
 }

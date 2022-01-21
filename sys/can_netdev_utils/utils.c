@@ -398,7 +398,7 @@ int can_netdev_filter(int argc, char **argv)
     uint8_t fifo   = 0;
     uint32_t val1  = 0;
     uint32_t val2  = 0;
-    can_netdev_filtermode_t mode = CAN_FILTER_MSK32;
+    socketcan_filtermode_t mode = CAN_FILTERMODE_MSK32;
     can_netdev_t *dev;
 
 
@@ -472,12 +472,12 @@ int can_netdev_filter(int argc, char **argv)
                 /* If mode = mask32 */
                 if(!strcmp(value, "mask32")) {
 
-                    mode = CAN_FILTER_MSK32;
+                    mode = CAN_FILTERMODE_MSK32;
                 }
 
                 else if(!strcmp(value, "id32")) {
 
-                    mode = CAN_FILTER_ID32;
+                    mode = CAN_FILTERMODE_ID32;
                 }
 
                 else {
@@ -525,7 +525,8 @@ int can_netdev_filter(int argc, char **argv)
            val2);
 
     /* Configure filter */
-    can_netdev_filterconf(dev, filter, fifo, mode, val1, val2);
+    /*pcan_filterconf(dev, filter, fifo, mode, val1, val2);*/
+    dev++;
 
     return 0;
 }

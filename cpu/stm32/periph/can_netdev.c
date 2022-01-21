@@ -79,13 +79,8 @@ static int  can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *i
 static int  can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode);
+int         pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter);
 static int  can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t filter);
-int can_netdev_filterconf(can_netdev_t *dev,
-                          uint8_t filter,
-                          uint8_t fifo,
-                          can_netdev_filtermode_t mode,
-                          uint32_t value1,
-                          uint32_t value2);
 static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox);
 static inline void tx_isr(can_netdev_t *dev);
 static inline void sce_isr(can_netdev_t *dev);
@@ -946,12 +941,7 @@ int can_netdev_opconf(can_netdev_t *dev)
  *
  *
  */
-int can_netdev_filterconf(can_netdev_t *dev,
-                          uint8_t filter,
-                          uint8_t fifo,
-                          can_netdev_filtermode_t mode,
-                          uint32_t value1,
-                          uint32_t value2)
+int pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter)
 {
     uint32_t mask_on;
     uint32_t mask_off;
@@ -960,21 +950,21 @@ int can_netdev_filterconf(can_netdev_t *dev,
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
 
     /* Calculate masks for turning ON and OFF  */
-    mask_on  = 0x1 << filter;
-    mask_off = 0xfffffffe << filter;
+    mask_on  = 0x1 << filter->filter_num;
+    mask_off = 0xfffffffe << filter->filter_num;
 
     /* Deactivate filter */
     dev->eparams->device->FA1R &= mask_off;
 
     /* If turning OFF filter */
-    if(mode == CAN_FILTER_OFF) {
+    if(filter->mode == CAN_FILTERMODE_OFF) {
 
         /* Ending process */
         return 0;
     }
 
     /* If going for FIFO 1 */
-    if(fifo) {
+    if(filter->fifo) {
         dev->eparams->device->FFA1R |= mask_on;
     }
 
@@ -985,9 +975,9 @@ int can_netdev_filterconf(can_netdev_t *dev,
     }
 
     /* Select FBM and FSC bits of FS1R and FM1R regs according to mode */
-    switch (mode) {
+    switch (filter->mode) {
 
-        case CAN_FILTER_MSK32:
+        case CAN_FILTERMODE_MSK32:
             /* FBM = 0 */
             dev->eparams->device->FM1R &= mask_off;
 
@@ -995,7 +985,7 @@ int can_netdev_filterconf(can_netdev_t *dev,
             dev->eparams->device->FS1R |= mask_on;
             break;
     
-        case CAN_FILTER_ID32:
+        case CAN_FILTERMODE_ID32:
             /* FBM = 1 */
             dev->eparams->device->FM1R |= mask_on;
 
@@ -1004,7 +994,7 @@ int can_netdev_filterconf(can_netdev_t *dev,
 
             break;
     
-        case CAN_FILTER_MSK16:
+        case CAN_FILTERMODE_MSK16:
             /* FBM = 0 */
             dev->eparams->device->FM1R &= mask_off;
 
@@ -1013,7 +1003,7 @@ int can_netdev_filterconf(can_netdev_t *dev,
 
             break;
     
-        case CAN_FILTER_ID16:
+        case CAN_FILTERMODE_ID16:
             /* FBM = 1 */
             dev->eparams->device->FM1R |= mask_on;
 
@@ -1027,10 +1017,10 @@ int can_netdev_filterconf(can_netdev_t *dev,
     }
 
     /* Load Mask/ID values */
-    dev->eparams->device->sFilterRegister[filter].FR1 =
-        value1;
-    dev->eparams->device->sFilterRegister[filter].FR2 =
-        value2;
+    dev->eparams->device->sFilterRegister[filter->filter_num].FR1 =
+        filter->can_id;
+    dev->eparams->device->sFilterRegister[filter->filter_num].FR2 =
+        filter->can_mask;
 
     /* Activate filter */
     dev->eparams->device->FA1R |= mask_on;

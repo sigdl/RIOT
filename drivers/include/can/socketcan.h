@@ -118,6 +118,17 @@ typedef enum {
 } socketcan_protocol_t;
 
 /**
+ * @brief SocketCAN filter modes
+ */
+typedef enum {
+    CAN_FILTERMODE_OFF,                     /* Turn filter OFF                  */
+    CAN_FILTERMODE_MSK32,                   /* 32bit mask + ID filter           */
+    CAN_FILTERMODE_ID32,                    /* 32bit ID   + ID filter           */
+    CAN_FILTERMODE_MSK16,                   /* 16bit mask + ID filter           */
+    CAN_FILTERMODE_ID16                     /* 16bit ID   + ID filter           */
+} socketcan_filtermode_t;
+
+/**
  * @brief   Definition for CAN bittiming struct
  * 
  *                   Nominal bit time (nbt) composed of 8 time quantum (tq)
@@ -195,52 +206,54 @@ typedef uint8_t socketcan_iface_t;
  * 
  * Needed for recursive use in list of filters
  */
-typedef struct can_filter can_filter_t;
+typedef struct socketcan_filter socketcan_filter_t;
 
 /**
  * @brief   Definition for SocketCAN identification
  */
-struct can_filter {
-    can_filter_t *next;         /**< Next filter in chain                       */
-    uint8_t       filter_num;   /**< Filter system number                       */
-    canid_t       can_id;       /**< Filter ID                                  */
-    canid_t       can_mask;     /**< Filter mask                                */
-    int         (*proto_handler)(can_frame_t *frame); /**< Protocol handler     */
+struct socketcan_filter {
+    socketcan_filter_t *next;         /**< Next filter in chain                 */
+    uint8_t             filter_num;   /**< Filter system number                 */
+    uint8_t             fifo;         /**< FIFO to apply filter                 */
+    socketcan_filtermode_t mode;      /**< Filter mode                          */
+    canid_t             can_id;       /**< Filter ID                            */
+    canid_t             can_mask;     /**< Filter mask                          */
+    int (*proto_handler)(can_frame_t *frame); /**< Protocol handler             */
 };
 
 typedef struct {
-    uint8_t      rxbuf_num;     /**< Num of RX buffer                           */
-    uint8_t      rxbuf_wr;      /**< Pointer of last available RX frame         */
-    uint8_t      rxbuf_rd;      /**< Pointer of last processed RX frame         */
-    can_frame_t *rxbuf;         /**< RX frame circular buffer                   */
+    uint8_t       rxbuf_num;    /**< Num of RX buffer                           */
+    uint8_t       rxbuf_wr;     /**< Pointer of last available RX frame         */
+    uint8_t       rxbuf_rd;     /**< Pointer of last processed RX frame         */
+    can_frame_t  *rxbuf;        /**< RX frame circular buffer                   */
 } socketcan_buffer_t;
 
 typedef struct {
-    uint32_t    *nom_bitrate;   /**< Nominal Bit rate in bits/sec               */
-    uint32_t    *r_bitrate;     /**< Real Bit rate in bits/sec                  */
-    uint32_t    *brp;           /**< Bit-rate prescaler                         */
-    uint32_t    clock;          /**< Clock for CAN device in Hz                 */
-    uint32_t    tq;             /**< Time quanta (TQ) in nanoseconds            */
-    uint8_t     prseg;          /**< Propagation segment in TQs                 */
-    uint8_t     phseg1;         /**< Phase segment 1 in TQs                     */
-    uint8_t     phseg2;         /**< Phase segment 2 in TQs                     */
-    uint8_t     sjw;            /**< Synchronisation jump width in TQs          */
+    uint32_t     *nom_bitrate;  /**< Nominal Bit rate in bits/sec               */
+    uint32_t     *r_bitrate;    /**< Real Bit rate in bits/sec                  */
+    uint32_t     *brp;          /**< Bit-rate prescaler                         */
+    uint32_t      clock;        /**< Clock for CAN device in Hz                 */
+    uint32_t      tq;           /**< Time quanta (TQ) in nanoseconds            */
+    uint8_t       prseg;        /**< Propagation segment in TQs                 */
+    uint8_t       phseg1;       /**< Phase segment 1 in TQs                     */
+    uint8_t       phseg2;       /**< Phase segment 2 in TQs                     */
+    uint8_t       sjw;          /**< Synchronisation jump width in TQs          */
 } socketcan_timing_t;
 
 /**
  * @brief   Definition for SocketCAN interface
  */
 typedef struct {
-    spi_t       spi;            /**< Interface for SPI devices                  */
-    spi_mode_t  spi_mode;       /**< SPI mode                                   */
-    spi_clk_t   spi_clk;        /**< SPI clock frequency                        */
-    gpio_t      cs_pin;         /**< CS pin                                     */
-    gpio_t      int_pin;        /**< INT pin                                    */
-    gpio_t      rst_pin;        /**< RST pin                                    */
-    gpio_t      rx_pin;         /**< RX pin                                     */
-    gpio_t      tx_pin;         /**< TX pin                                     */
-    gpio_af_t   af_op;          /**< Alt pin function for normal operation      */
-    gpio_af_t   af_ndiag;       /**< Alt pin function for network diagnostics   */
+    spi_t         spi;          /**< Interface for SPI devices                  */
+    spi_mode_t    spi_mode;     /**< SPI mode                                   */
+    spi_clk_t     spi_clk;      /**< SPI clock frequency                        */
+    gpio_t        cs_pin;       /**< CS pin                                     */
+    gpio_t        int_pin;      /**< INT pin                                    */
+    gpio_t        rst_pin;      /**< RST pin                                    */
+    gpio_t        rx_pin;       /**< RX pin                                     */
+    gpio_t        tx_pin;       /**< TX pin                                     */
+    gpio_af_t     af_op;        /**< Alt pin function for normal operation      */
+    gpio_af_t     af_ndiag;     /**< Alt pin function for network diagnostics   */
 } socketcan_ifparams_t;
 
 /**

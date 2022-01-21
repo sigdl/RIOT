@@ -66,6 +66,9 @@ extern "C" {
  */
 /*     -----     Interface Parameters      -----     */
 
+/**
+ * @brief   Definition of iface type and number
+ */
 #ifndef PCAN0_IFACE
 #define PCAN0_IFACE                 CAN_IFACE_TYPE_STM32 | CAN_IFACE_NUM_0
 #endif
@@ -268,6 +271,12 @@ static uint32_t     brp_0;
  * @name    Arrays of ALL Interfaces' parameters
  * @{
  */
+#ifndef PCAN_IFACE
+#define PCAN_IFACE              { \
+                                  PCAN0_IFACE, \
+                                }
+#endif
+
 #ifndef PCAN_IFPARAMS
 #define PCAN_IFPARAMS           { \
                                   PCAN0_IFPARAMS, \
@@ -299,6 +308,7 @@ static uint32_t     brp_0;
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
+static       socketcan_iface_t    pcan_iface[]    = PCAN_IFACE;
 static const socketcan_ifparams_t pcan_ifparams[] = PCAN_IFPARAMS;
 static const socketcan_timing_t   pcan_timing[]   = PCAN_TIMING;
 static       socketcan_pm_t       pcan_pm[]       = PCAN_PM;

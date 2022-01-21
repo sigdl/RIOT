@@ -57,17 +57,6 @@ typedef enum {
 } can_confmode_t;
 
 /**
- * @brief STM32 CAN filter modes
- */
-typedef enum {
-    CAN_FILTER_OFF,                         /* Turn filter OFF                  */
-    CAN_FILTER_MSK32,                       /* 32bit mask + ID filter           */
-    CAN_FILTER_ID32,                        /* 32bit ID + ID filter             */
-    CAN_FILTER_MSK16,
-    CAN_FILTER_ID16
-} can_netdev_filtermode_t;
-
-/**
  * @brief STM32 CAN extended parameters
  */
 typedef struct {
@@ -126,11 +115,6 @@ typedef struct {
 void can_netdev_setup(can_netdev_t *dev, uint8_t index);
 int  can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode);
 int  can_netdev_opconf(can_netdev_t *dev);
-int  can_netdev_filterconf(can_netdev_t *dev,
-                           uint8_t filter,
-                           uint8_t fifo,
-                           can_netdev_filtermode_t mode,
-                           uint32_t value1,
-                           uint32_t value2);
+int  pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter);
 can_netdev_t * get_can_netdev(int8_t device);
 #endif /* CAN_NETDEV_H */

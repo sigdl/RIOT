@@ -30,6 +30,7 @@ extern "C" {
 /*------------------------------------------------------------------------------*
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
+#include "kernel_defines.h"
 #include "can/socketcan.h"
 
 /*------------------------------------------------------------------------------*
@@ -57,7 +58,8 @@ typedef void (*sock_can_cb_t)(sock_can_t *sock, void *arg);
 struct sock_can {
     sock_can_t           *next_sock;   /**< Next sock using this interface      */
     uint8_t               num_filters; /**< Number of filter for this socket    */
-    can_filter_t         *filters;     /**< Filters array                       */
+    socketcan_filter_t   *filters;     /**< Filters array                       */
+    socketcan_params_t   *scparams;    /**< SocketCAN device's params           */
     socketcan_buffer_t   *buffer;      /**< Frame buffer                        */
     socketcan_protocol_t  protocol;    /**< Socket protocol                     */
     sock_can_cb_t         cb;          /**< App's call back function            */
