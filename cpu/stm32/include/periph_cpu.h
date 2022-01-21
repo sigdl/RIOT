@@ -340,7 +340,7 @@ typedef enum {
  * - bit 4: ODR value
  * - bit 2+3: in/out
  * - bit 1: PU enable
- * - bit 2: OD enable
+ * - bit 0: OD enable
  */
 #define GPIO_MODE(mode, cnf, odr)       (mode | (cnf << 2) | (odr << 4))
 

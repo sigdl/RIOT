@@ -134,14 +134,18 @@ int gpio_init(gpio_t pin, gpio_mode_t mode)
 
     /* enable clock */
     port_init_clock(port, pin);
-    /* set mode */
+
+    /* Config MODER to set pin to AF mode */
     set_mode(port, pin_num, mode);
+
     /* set pull resistor configuration */
     port->PUPDR &= ~(0x3 << (2 * pin_num));
     port->PUPDR |=  (((mode >> 2) & 0x3) << (2 * pin_num));
+
     /* set output mode */
     port->OTYPER &= ~(1 << pin_num);
     port->OTYPER |=  (((mode >> 4) & 0x1) << pin_num);
+
     /* set pin speed to maximum */
     port->OSPEEDR |= (3 << (2 * pin_num));
 
@@ -155,10 +159,12 @@ void gpio_init_af(gpio_t pin, gpio_af_t af)
 
     /* enable clock */
     port_init_clock(port, pin);
-    /* set selected function */
+
+    /* Config AFR to set selected function */
     port->AFR[(pin_num > 7) ? 1 : 0] &= ~(0xf << ((pin_num & 0x07) * 4));
-    port->AFR[(pin_num > 7) ? 1 : 0] |= (af << ((pin_num & 0x07) * 4));
-    /* set pin to AF mode */
+    port->AFR[(pin_num > 7) ? 1 : 0] |=  (af  << ((pin_num & 0x07) * 4));
+
+    /* Config MODER to set pin to AF mode */
     set_mode(port, pin_num, 2);
 }
 
@@ -198,11 +204,23 @@ int gpio_read(gpio_t pin)
     return (_port(pin)->IDR & (1 << _pin_num(pin)));
 }
 
+#if 1
 void gpio_set(gpio_t pin)
 {
     _port(pin)->BSRR = (1 << _pin_num(pin));
 }
+#endif
+#if 0
+void gpio_set(gpio_t pin)
+{
+    GPIO_TypeDef *port = _port(pin);
+    int pin_num = _pin_num(pin);
 
+    DEBUG("can_netdev_test: Setting pin %i of port %p\n", pin_num, port);
+
+    _port(pin)->BSRR = (1 << _pin_num(pin));
+}
+#endif
 void gpio_clear(gpio_t pin)
 {
     _port(pin)->BSRR = (1 << (_pin_num(pin) + 16));
