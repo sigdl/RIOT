@@ -40,6 +40,10 @@ extern "C" {
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
+typedef enum {
+    SOCK_LAST,
+} sock_find_t;
+
 /**
  * @brief   Forward declaration for SocketCAN sock
  * 
@@ -68,7 +72,7 @@ struct sock_can {
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-
+int sock_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t mode);
 
 
 #ifdef __cplusplus
