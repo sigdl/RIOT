@@ -129,6 +129,13 @@ typedef enum {
 } socketcan_filtermode_t;
 
 /**
+ * @brief SocketCAN filter search types
+ */
+typedef enum {
+    FILTER_LAST,
+} filter_find_t;
+
+/**
  * @brief   Definition for CAN bittiming struct
  * 
  *                   Nominal bit time (nbt) composed of 8 time quantum (tq)
@@ -212,7 +219,7 @@ typedef struct socketcan_filter socketcan_filter_t;
  * @brief   Definition for SocketCAN identification
  */
 struct socketcan_filter {
-    socketcan_filter_t *next;         /**< Next filter in chain                 */
+    socketcan_filter_t *next_filter;  /**< Next filter in  list                 */
     uint8_t             filter_num;   /**< Filter system number                 */
     uint8_t             fifo;         /**< FIFO to apply filter                 */
     socketcan_filtermode_t mode;      /**< Filter mode                          */
@@ -273,7 +280,8 @@ typedef struct {
     socketcan_pm_t             *pm;       /**< CAN power management parameters  */
     netdev_t                    netdev;   /**< Netdev config                    */
     gnrc_netif_t                netif;    /**< Netif config                     */
-    void                       *first_sock; /**< 1st sock using this interface  */
+    socketcan_filter_t         *first_filter; /**< 1st filter of this interface */
+    void                       *first_sock;   /**< 1st sock of this interface   */
 } socketcan_params_t;
 
 /*------------------------------------------------------------------------------*

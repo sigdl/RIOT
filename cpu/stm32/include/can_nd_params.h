@@ -312,7 +312,7 @@ static       socketcan_iface_t    pcan_iface[]    = PCAN_IFACE;
 static const socketcan_ifparams_t pcan_ifparams[] = PCAN_IFPARAMS;
 static const socketcan_timing_t   pcan_timing[]   = PCAN_TIMING;
 static       socketcan_pm_t       pcan_pm[]       = PCAN_PM;
-static       can_netdev_eparams_t pcan_eparams[]  = PCAN_EPARAMS;
+static       can_nd_eparams_t     pcan_eparams[]  = PCAN_EPARAMS;
 
 
 /*------------------------------------------------------------------------------*

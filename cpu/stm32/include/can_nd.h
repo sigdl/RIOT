@@ -105,8 +105,8 @@ typedef struct {
     uint8_t          flag_rx1 : 1;        /**< Signals RX1 interrupt occured    */
     uint8_t          flag_tx  : 1;        /**< Signals TX  interrupt occured    */
     uint8_t          flag_sce : 1;        /**< Signals SCE interrupt occured    */
-    socketcan_params_t  scparams;         /**< CAN config                       */
-    can_nd_eparams_t   *eparams;          /**< CAN extra config                 */
+    socketcan_params_t    scparams;       /**< CAN config                       */
+    can_nd_eparams_t     *eparams;        /**< CAN extra config                 */
 } can_nd_t;
 
 /*------------------------------------------------------------------------------*

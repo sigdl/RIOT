@@ -30,7 +30,7 @@
 #include "shell.h"
 #include "shell_commands.h"
 
-#include "can_netdev/can_netdev_utils.h"
+#include "can_netdev/can_netdev.h"
 
 #define ENABLE_DEBUG            1
 #include "debug.h"
@@ -130,7 +130,7 @@ int can_netdev_test(int argc, char **argv)
     /* Reject incorrect device number */
 
     /* Get device structure */
-    can_netdev_t *dev = get_can_netdev(device);
+    can_nd_t *dev = get_can_netdev(device);
 
     /* Get desired frequency */
     uint32_t freq = atoi(argv[2]);
@@ -189,14 +189,14 @@ int can_netdev_test(int argc, char **argv)
             DEBUG("can_netdev_test: Setting TX pin to 0\n");
 
             /* Set TX pin to 0 */
-            gpio_clear(dev->sparams.ifparams->tx_pin);
+            gpio_clear(dev->scparams.ifparams->tx_pin);
             break;
     
         case CAN_TEST_1:
             DEBUG("can_netdev_test: Setting TX pin to 1\n");
 
             /* Set TX pin to 1 */
-            gpio_set(dev->sparams.ifparams->tx_pin);
+            gpio_set(dev->scparams.ifparams->tx_pin);
             break;
     
         case CAN_TEST_500:
@@ -205,7 +205,7 @@ int can_netdev_test(int argc, char **argv)
             /* Cycle */
             while (1) {
                 /* Toggle output */
-                gpio_toggle(dev->sparams.ifparams->tx_pin);
+                gpio_toggle(dev->scparams.ifparams->tx_pin);
             }
             break;
 
@@ -220,7 +220,7 @@ int can_netdev_test(int argc, char **argv)
                 }
 
                 /* Toggle output */
-                gpio_toggle(dev->sparams.ifparams->tx_pin);
+                gpio_toggle(dev->scparams.ifparams->tx_pin);
             }
     }
 
@@ -273,7 +273,7 @@ int can_netdev_start(int argc, char **argv)
     }
 
     /* Get device structure */
-    can_netdev_t *dev = get_can_netdev(device);
+    can_nd_t *dev = get_can_netdev(device);
 #if 0
     /* Scan args */
     for (i = 2; i < argc; i++)
@@ -399,7 +399,7 @@ int can_netdev_filter(int argc, char **argv)
     uint32_t val1  = 0;
     uint32_t val2  = 0;
     socketcan_filtermode_t mode = CAN_FILTERMODE_MSK32;
-    can_netdev_t *dev;
+    can_nd_t *dev;
 
 
     /* If there are parameters */
@@ -556,7 +556,7 @@ int can_netdev_frame(int argc, char **argv)
     /* Reject incorrect device number */
 
     /* Get device structure */
-    can_netdev_t *dev = get_can_netdev(device);
+    can_nd_t *dev = get_can_netdev(device);
 
     /* Configure iolist */
     iolist.iol_next = NULL;
@@ -573,7 +573,7 @@ int can_netdev_frame(int argc, char **argv)
 
     DEBUG("Sending frame to iface %d with id %lu and dlc = %d\n", device, frame.id, argc - 3);
 
-    dev->sparams.netdev.driver->send(&dev->sparams.netdev, &iolist);
+    dev->scparams.netdev.driver->send(&dev->scparams.netdev, &iolist);
 
     return 0;
 }

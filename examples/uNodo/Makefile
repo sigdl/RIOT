@@ -21,14 +21,14 @@ QUIET ?= 1
 
 # Modules to include:
 #USEMODULE += mcp2515net
-USEMODULE += periph_can_netdev
+USEMODULE += periph_can_nd
 USEMODULE += gnrc_can
 #USEMODULE += periph_eth
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
 #USEMODULE += ztimer_usec
-USEMODULE += can_netdev_utils
+USEMODULE += can_netdev
 
 # Include and auto-initialize all available sensors
 USEMODULE += saul_default

@@ -25,7 +25,7 @@
  *------------------------------------------------------------------------------*/
 #include "net/sock/can.h"
 #include "net/netif.h"
-#include "can_netdev.h"
+#include "can_nd.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -72,13 +72,13 @@
  */
 int sock_can_create(sock_can_t *sock, char *iface_name)
 {
-    netif_t        *ndevice;
-    gnrc_netif_t   *netiface;
-    can_netdev_t   *dev;
-    uint8_t         i;
-    int             resp;
-    uint8_t         iface_type;
-    sock_can_t     *last = NULL;
+    netif_t      *ndevice;
+    gnrc_netif_t *netiface;
+    can_nd_t     *dev;
+    uint8_t       i;
+    int           resp;
+    uint8_t       iface_type;
+    sock_can_t   *last = NULL;
 
     /* Evaluate parameters */
     assert(sock);
@@ -94,7 +94,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
     /* Get containers */
     netiface = container_of(ndevice, gnrc_netif_t, netif);
     sock->scparams = container_of(netiface, socketcan_params_t, netif);
-    dev = container_of(sock->scparams, can_netdev_t, sparams);
+    dev = container_of(sock->scparams, can_nd_t, scparams);
 
     /* Get iface type */
     iface_type = sock->scparams->iface & CAN_IFACE_TYPE_Msk;
@@ -120,7 +120,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
         }
     }
 
-    /* Make sure current sock is last */
+    /* Make sure current sock is last in list */
     sock->next_sock = NULL;
 
     /* If it's at the beginning of list */

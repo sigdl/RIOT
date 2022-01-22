@@ -21,8 +21,8 @@
  *                                Included Files                                *
  *------------------------------------------------------------------------------*/
 #include "log.h"
-#include "can_netdev.h"
-#include "can_netdev_params.h"
+#include "can_nd.h"
+#include "can_nd_params.h"
 #include "net/gnrc/netif/can_netdev.h"
 #include "pm_layered.h"
 
@@ -58,7 +58,7 @@
  * @brief   Array of device descriptors
  * @{
  */
-static can_netdev_t pcan_arr[CAN_NETDEV_NUM];
+static can_nd_t pcan_arr[CAN_NETDEV_NUM];
 
 /** @} */
 
@@ -93,27 +93,27 @@ void auto_init_can_netdev(void)
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
 
         /* Config iface type and number */
-        pcan_arr[i].sparams.iface    = pcan_iface[i];
+        pcan_arr[i].scparams.iface    = pcan_iface[i];
 
         /* Populate pointers */
-        pcan_arr[i].sparams.ifparams = &pcan_ifparams[i];
-        pcan_arr[i].sparams.timing   = &pcan_timing[i];
-        pcan_arr[i].sparams.pm       = &pcan_pm[i];
-        pcan_arr[i].eparams          = &pcan_eparams[i];
+        pcan_arr[i].scparams.ifparams = &pcan_ifparams[i];
+        pcan_arr[i].scparams.timing   = &pcan_timing[i];
+        pcan_arr[i].scparams.pm       = &pcan_pm[i];
+        pcan_arr[i].eparams           = &pcan_eparams[i];
 
         /* Add index to name */
         snprintf(iface_name, CONFIG_NETIF_NAMELENMAX, "%s%d", CAN_NETDEV_BNAME, i);
 
         /* setup netdev device */
-        can_netdev_setup(&pcan_arr[i], i);
+        pcan_nd_setup(&pcan_arr[i], i);
 
         /* Create network interface */
-        gnrc_netif_can_create(&pcan_arr[i].sparams.netif,
+        gnrc_netif_can_create(&pcan_arr[i].scparams.netif,
                                pcan_stack[i],
                                CAN_NETDEV_MAC_STACKSIZE,
                                CAN_NETDEV_MAC_PRIO,
                                iface_name,
-                              &pcan_arr[i].sparams.netdev
+                              &pcan_arr[i].scparams.netdev
                              );
 
         /* If the configured PM level is above the previous one */
@@ -128,7 +128,7 @@ void auto_init_can_netdev(void)
     pm_block(pm_level);
 }
 
-inline can_netdev_t * get_can_netdev(int8_t device)
+inline can_nd_t * get_can_netdev(int8_t device)
 {
     return &pcan_arr[device];
 }

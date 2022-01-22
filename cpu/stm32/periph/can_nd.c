@@ -30,7 +30,7 @@
 #include "xtimer.h"
 #include "assert.h"
 
-#include "can_netdev.h"
+#include "can_nd.h"
 #include "net/sock/can.h"
 
 #define ENABLE_DEBUG            1
@@ -71,31 +71,34 @@
 /*------------------------------------------------------------------------------*
  *                          Private Function Prototypes                         *
  *------------------------------------------------------------------------------*/
-static int  can_netdev_init(netdev_t *netdev);
-/*static void can_netdev_irq_h(void *arg);*/
-static void can_netdev_isr(netdev_t *netdev);
-static int  can_netdev_send(netdev_t *netdev, const iolist_t *iolist);
-static int  can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *info);
-static int  can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
-static int  can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
-static int  can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode);
-int         pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter);
-static int  can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t filter);
-static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox);
-static inline void tx_isr(can_netdev_t *dev);
-static inline void sce_isr(can_netdev_t *dev);
+int         pcan_nd_basicconf(can_nd_t *dev, can_confmode_t mode);
+int         pcan_nd_opconf(can_nd_t *dev);
+static int  pcan_nd_init(netdev_t *netdev);
+/*static void pcan_nd_irq_h(void *arg);*/
+static void pcan_nd_isr(netdev_t *netdev);
+static int  pcan_nd_send(netdev_t *netdev, const iolist_t *iolist);
+static int  pcan_nd_recv(netdev_t *netdev, void *buf, size_t max_len, void *info);
+static int  pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
+static int  pcan_nd_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
+static int  pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode);
+int         pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter);
+int         filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type);
+static int  pcan_nd_findfilter(can_nd_t *dev, sock_can_t *sock, int8_t filter);
+static inline void rx_isr(can_nd_t *dev, uint8_t mailbox);
+static inline void tx_isr(can_nd_t *dev);
+static inline void sce_isr(can_nd_t *dev);
 
 
 /*------------------------------------------------------------------------------*
  *                                Private Data                                  *
  *------------------------------------------------------------------------------*/
-static const netdev_driver_t can_netdev_driver = {
-    .init = can_netdev_init,
-    .isr  = can_netdev_isr,
-    .send = can_netdev_send,
-    .recv = can_netdev_recv,
-    .get  = can_netdev_get,
-    .set  = can_netdev_set,
+static const netdev_driver_t pcan_nd_driver = {
+    .init = pcan_nd_init,
+    .isr  = pcan_nd_isr,
+    .send = pcan_nd_send,
+    .recv = pcan_nd_recv,
+    .get  = pcan_nd_get,
+    .set  = pcan_nd_set,
 };
 
 /*------------------------------------------------------------------------------*
@@ -110,10 +113,10 @@ static const netdev_driver_t can_netdev_driver = {
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_init(netdev_t *netdev)
+static int pcan_nd_init(netdev_t *netdev)
 {
     socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
-    can_netdev_t       *dev      = container_of(scparams, can_netdev_t,       sparams);
+    can_nd_t       *dev      = container_of(scparams, can_nd_t,       scparams);
 
 
     /*Disable interrupts before changing anything*/
@@ -127,10 +130,10 @@ static int can_netdev_init(netdev_t *netdev)
 #endif /* CPU_FAM_STM32F0 */
 
     /* Do basic config */
-    can_netdev_basicconf(dev, CAN_CONFMODE_OP);
+    pcan_nd_basicconf(dev, CAN_CONFMODE_OP);
 
     /* Do operational parameters config */
-    can_netdev_opconf(dev);
+    pcan_nd_opconf(dev);
 
     return 0;
 }
@@ -146,7 +149,7 @@ static int can_netdev_init(netdev_t *netdev)
 void ISR_CAN1_RX0(void)
 {
     /* Obtain device's structure */
-    can_netdev_t *dev = get_can_netdev(0);
+    can_nd_t *dev = get_can_netdev(0);
 
     /* Turn IRQ off */
     NVIC_DisableIRQ(dev->eparams->irq_rx0);
@@ -160,7 +163,7 @@ void ISR_CAN1_RX0(void)
     dev->flag_rx0 = 1;
 
     /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->sparams.netdev);
+    netdev_trigger_event_isr(&dev->scparams.netdev);
 
     cortexm_isr_end();
 }
@@ -169,7 +172,7 @@ void ISR_CAN1_RX1(void)
 {
 
     /* Obtain device's structure */
-    can_netdev_t *dev = get_can_netdev(0);
+    can_nd_t *dev = get_can_netdev(0);
 
     /* Turn IRQ off */
     NVIC_DisableIRQ(dev->eparams->irq_rx1);
@@ -183,7 +186,7 @@ void ISR_CAN1_RX1(void)
     dev->flag_rx1 = 1;
 
     /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->sparams.netdev);
+    netdev_trigger_event_isr(&dev->scparams.netdev);
 
     cortexm_isr_end();
 }
@@ -191,7 +194,7 @@ void ISR_CAN1_RX1(void)
 void ISR_CAN1_TX(void)
 {
     /* Obtain device's structure */
-    can_netdev_t *dev = get_can_netdev(0);
+    can_nd_t *dev = get_can_netdev(0);
 
     /* Turn IRQ off */
     NVIC_DisableIRQ(dev->eparams->irq_tx);
@@ -203,7 +206,7 @@ void ISR_CAN1_TX(void)
     dev->flag_tx = 1;
 
     /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->sparams.netdev);
+    netdev_trigger_event_isr(&dev->scparams.netdev);
 
     cortexm_isr_end();
 }
@@ -211,13 +214,13 @@ void ISR_CAN1_TX(void)
 void ISR_CAN1_SCE(void)
 {
     /* Obtain device's structure */
-    can_netdev_t *dev = get_can_netdev(0);
+    can_nd_t *dev = get_can_netdev(0);
 
     /* Signal SCE interrupt */
     dev->flag_sce = 1;
 
     /* Signal event to driver's ISR */
-    netdev_trigger_event_isr(&dev->sparams.netdev);
+    netdev_trigger_event_isr(&dev->scparams.netdev);
 
     cortexm_isr_end();
 }
@@ -232,10 +235,10 @@ void ISR_CAN1_SCE(void)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static void can_netdev_isr(netdev_t *netdev)
+static void pcan_nd_isr(netdev_t *netdev)
 {
     socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
-    can_netdev_t       *dev      = container_of(scparams, can_netdev_t,       sparams);
+    can_nd_t       *dev      = container_of(scparams, can_nd_t,       scparams);
 
     DEBUG("[PERIPH CAN] isr(): Entering ISR in thread context\n");
 
@@ -305,7 +308,7 @@ static void can_netdev_isr(netdev_t *netdev)
     }
 }
 
-static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
+static inline void rx_isr(can_nd_t *dev, uint8_t mailbox)
 {
     int           resp;
     uint8_t       flags;
@@ -341,7 +344,7 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
         filter = (dev->eparams->device->sFIFOMailBox[mailbox].RDTR & CAN_RDT0R_FMI_Msk) >> CAN_RDT0R_FMI_Pos;
 
         /* Search for this filter */
-        resp = can_netdev_findfilter(dev, sock, filter);
+        resp = pcan_nd_findfilter(dev, sock, filter);
 
         /* If no associated sock found */
         if(resp < 0) {
@@ -430,19 +433,19 @@ static inline void rx_isr(can_netdev_t *dev, uint8_t mailbox)
     }
 
     /* Signal event */
-    dev->sparams.netdev.event_callback(&dev->sparams.netdev, NETDEV_EVENT_RX_COMPLETE);
+    dev->scparams.netdev.event_callback(&dev->scparams.netdev, NETDEV_EVENT_RX_COMPLETE);
 }
 
-static inline void tx_isr(can_netdev_t *dev)
+static inline void tx_isr(can_nd_t *dev)
 {
 
     DEBUG("[PERIPH CAN] tx_isr(): packet transmitted\n");
 
     /* Signal event */
-    dev->sparams.netdev.event_callback(&dev->sparams.netdev, NETDEV_EVENT_TX_COMPLETE);
+    dev->scparams.netdev.event_callback(&dev->scparams.netdev, NETDEV_EVENT_TX_COMPLETE);
 }
 
-static inline void sce_isr(can_netdev_t *dev)
+static inline void sce_isr(can_nd_t *dev)
 {
     dev++;
 }
@@ -458,10 +461,10 @@ static inline void sce_isr(can_netdev_t *dev)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
+static int pcan_nd_recv(netdev_t *netdev, void *buf, size_t max_len, void *info)
 {
     socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
-    can_netdev_t       *dev      = container_of(scparams, can_netdev_t,       sparams);
+    can_nd_t       *dev      = container_of(scparams, can_nd_t,       scparams);
 
     (void)dev;
     (void)buf;
@@ -482,10 +485,10 @@ static int can_netdev_recv(netdev_t *netdev, void *buf, size_t max_len, void *in
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_send(netdev_t *netdev, const iolist_t *iolist)
+static int pcan_nd_send(netdev_t *netdev, const iolist_t *iolist)
 {
     socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
-    can_netdev_t       *dev      = container_of(scparams, can_netdev_t,       sparams);
+    can_nd_t       *dev      = container_of(scparams, can_nd_t,       scparams);
     can_frame_t        *frame;   
     uint8_t i;
     uint8_t dlc;
@@ -589,7 +592,7 @@ static int can_netdev_send(netdev_t *netdev, const iolist_t *iolist)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len)
+static int pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len)
 {
     int resp;
 
@@ -625,7 +628,7 @@ static int can_netdev_get(netdev_t *netdev, netopt_t opt, void *value, size_t ma
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len)
+static int pcan_nd_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len)
 {
     netdev++;
     opt++;
@@ -645,7 +648,7 @@ static int can_netdev_set(netdev_t *netdev, netopt_t opt, const void *value, siz
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode)
+static int pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode)
 {
     uint32_t wait_cnt = MODE_MAX_DELAY;
     int resp = 0;
@@ -716,13 +719,13 @@ static int can_netdev_mode(can_netdev_t *dev, socketcan_opmode_t mode)
  * @return                  0 on success
  * @return                  <0 on error
  */
-static int can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t filter)
+static int pcan_nd_findfilter(can_nd_t *dev, sock_can_t *sock, int8_t filter)
 {
     uint8_t i;
 
 
     /*Load first sock of this iface */
-    sock = dev->sparams.first_sock;
+    sock = dev->scparams.first_sock;
 
     /* If no sock */
     if(sock == NULL) {
@@ -769,16 +772,16 @@ static int can_netdev_findfilter(can_netdev_t *dev, sock_can_t *sock, int8_t fil
  * @param[in] index         Index of @p params in a global parameter struct array.
  *                          If initialized manually, pass a unique identifier instead.
  */
-void can_netdev_setup(can_netdev_t *dev, uint8_t index)
+void pcan_nd_setup(can_nd_t *dev, uint8_t index)
 {
     /* Load driver's interface */
-    dev->sparams.netdev.driver = &can_netdev_driver;
+    dev->scparams.netdev.driver = &pcan_nd_driver;
 
     /* Initialize mutex */
     mutex_init(&dev->lock);
 
     /* Register device */
-    netdev_register(&dev->sparams.netdev, NETDEV_STM32_CAN, index);
+    netdev_register(&dev->scparams.netdev, NETDEV_STM32_CAN, index);
 }
 
 /**
@@ -787,7 +790,7 @@ void can_netdev_setup(can_netdev_t *dev, uint8_t index)
  * Selects the mode (direct in/out or AF) of used pins and related configurations
  *
  */
-int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
+int pcan_nd_basicconf(can_nd_t *dev, can_confmode_t mode)
 {
 
      /*Disable interrupts before changing anything*/
@@ -801,10 +804,10 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
 #endif /* CPU_FAM_STM32F0 */
 
     /* Init rx pin */
-    gpio_init(dev->sparams.ifparams->rx_pin, GPIO_IN);
+    gpio_init(dev->scparams.ifparams->rx_pin, GPIO_IN);
 
     /* Init tx pin */
-    gpio_init(dev->sparams.ifparams->tx_pin, GPIO_OUT);
+    gpio_init(dev->scparams.ifparams->tx_pin, GPIO_OUT);
 
     /* Selecting configuration */
     switch( mode ) {
@@ -822,10 +825,10 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
 
             /* Extra steps for pin configuration */
 #ifdef CPU_FAM_STM32F1
-            gpio_init_af(dev->sparams.ifparams->tx_pin, GPIO_AF_OUT_PP);
+            gpio_init_af(dev->scparams.ifparams->tx_pin, GPIO_AF_OUT_PP);
 #else
-            gpio_init_af(dev->sparams.ifparams->rx_pin, dev->sparams.ifparams->af_op);
-            gpio_init_af(dev->sparams.ifparams->tx_pin, dev->sparams.ifparams->af_op);
+            gpio_init_af(dev->scparams.ifparams->rx_pin, dev->scparams.ifparams->af_op);
+            gpio_init_af(dev->scparams.ifparams->tx_pin, dev->scparams.ifparams->af_op);
 #endif
             break;
 
@@ -833,7 +836,7 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
         case CAN_CONFMODE_NTEST:
 
             /* Set TX pin to 0 */
-            gpio_clear(dev->sparams.ifparams->tx_pin);
+            gpio_clear(dev->scparams.ifparams->tx_pin);
 
             break;
     }
@@ -848,12 +851,12 @@ int can_netdev_basicconf(can_netdev_t *dev, can_confmode_t mode)
  * to change the configuration of things like bitrate, mode, etc
  *
  */
-int can_netdev_opconf(can_netdev_t *dev)
+int pcan_nd_opconf(can_nd_t *dev)
 {
     uint32_t      config;
 
     /* Set init mode */
-    can_netdev_mode(dev, CAN_OPMODE_INIT);
+    pcan_nd_mode(dev, CAN_OPMODE_INIT);
 
     /* Build config word */
     config = dev->eparams->ttcm << CAN_MCR_TTCM_Pos |
@@ -867,22 +870,22 @@ int can_netdev_opconf(can_netdev_t *dev)
     dev->eparams->device->MCR |= config;
 
     /* Calculating BRP = Tq / Tosc - 1 = Cf / (NBR * QPB) - 1 */
-    *(dev->sparams.timing->brp) = (uint32_t)CLOCK_APB1 / 
-           (uint32_t)(*(dev->sparams.timing->nom_bitrate) *
+    *(dev->scparams.timing->brp) = (uint32_t)CLOCK_APB1 / 
+           (uint32_t)(*(dev->scparams.timing->nom_bitrate) *
                        (1 + 
-                        dev->sparams.timing->prseg +
-                        dev->sparams.timing->phseg1 +
-                        dev->sparams.timing->phseg2)) - 1;
+                        dev->scparams.timing->prseg +
+                        dev->scparams.timing->phseg1 +
+                        dev->scparams.timing->phseg2)) - 1;
 
     /* Configuring bit timing parameters */
     dev->eparams->device->BTR =
          (((uint32_t)dev->eparams->silm              << CAN_BTR_SILM_Pos) & CAN_BTR_SILM_Msk) |
          (((uint32_t)dev->eparams->lbkm              << CAN_BTR_LBKM_Pos) & CAN_BTR_LBKM_Msk) |
-        (((uint32_t)(dev->sparams.timing->sjw - 1)    << CAN_BTR_SJW_Pos)  & CAN_BTR_SJW_Msk)  |
-        (((uint32_t)(dev->sparams.timing->phseg2 - 1) << CAN_BTR_TS2_Pos)  & CAN_BTR_TS2_Msk)  |
-       (((uint32_t)((dev->sparams.timing->phseg1 +
-                     dev->sparams.timing->prseg) - 1) << CAN_BTR_TS1_Pos)  & CAN_BTR_TS1_Msk)  |
-       ((uint32_t)(*(dev->sparams.timing->brp)) & CAN_BTR_BRP_Msk);
+        (((uint32_t)(dev->scparams.timing->sjw - 1)    << CAN_BTR_SJW_Pos)  & CAN_BTR_SJW_Msk)  |
+        (((uint32_t)(dev->scparams.timing->phseg2 - 1) << CAN_BTR_TS2_Pos)  & CAN_BTR_TS2_Msk)  |
+       (((uint32_t)((dev->scparams.timing->phseg1 +
+                     dev->scparams.timing->prseg) - 1) << CAN_BTR_TS1_Pos)  & CAN_BTR_TS1_Msk)  |
+       ((uint32_t)(*(dev->scparams.timing->brp)) & CAN_BTR_BRP_Msk);
 
     /* Configure filter init state ON */
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
@@ -931,7 +934,7 @@ int can_netdev_opconf(can_netdev_t *dev)
     /* Set normal mode. This will ONLY be successful if peripheral can detect 11
        consecutive recessive bits. That requieres correct pin assigment, proper
        connections, etc */
-    can_netdev_mode(dev, CAN_OPMODE_NORMAL);
+    pcan_nd_mode(dev, CAN_OPMODE_NORMAL);
 
     return 0;
 }
@@ -941,7 +944,7 @@ int can_netdev_opconf(can_netdev_t *dev)
  *
  *
  */
-int pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter)
+int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
 {
     uint32_t mask_on;
     uint32_t mask_off;
@@ -1022,6 +1025,25 @@ int pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter)
     dev->eparams->device->sFilterRegister[filter->filter_num].FR2 =
         filter->can_mask;
 
+    /* Make sure current filter is last in list */
+    filter->next_filter = NULL;
+
+    /* If it's at the beginning of list */
+    if(dev->scparams.first_filter == NULL) {
+
+        /* Register current filter as fist filter */
+        dev->scparams.first_filter = filter;
+    }
+
+    /* If it's NOT at the beginning of list */
+    else {
+        socketcan_filter_t *last = NULL;
+
+        /* Add filter to list */
+        filter_find(&dev->scparams, last, FILTER_LAST);
+        last->next_filter = filter;
+    }
+
     /* Activate filter */
     dev->eparams->device->FA1R |= mask_on;
 
@@ -1030,3 +1052,38 @@ int pcan_filterconf(can_netdev_t *dev, socketcan_filter_t *filter)
 
     return 0;
 }
+
+/**
+ * @brief   Search a sock in a sock list
+ *
+ * @param[in]  scparams   Pointer to SocketCAN device's params structure
+ * @param[out] filter     Response pointer
+ * @param[in]  mode       Type of search
+ *                          
+ */
+int filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type)
+{
+    switch (type)
+    {
+        /* Find last filter in dev's list */
+        case FILTER_LAST:
+
+                /* Load beginning of filter list */
+                filter = scparams->first_filter;
+
+                while(filter->next_filter != NULL) {
+
+                    /* Load next filter in list */
+                    filter = filter->next_filter;
+                }
+
+                return 0;
+            break;
+    
+        default:
+            break;
+    }
+
+    return 0;
+}
+

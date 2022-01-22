@@ -33,7 +33,7 @@ extern "C" {
 #include "sched.h"
 #include "thread.h"
 #include "net/gnrc.h"
-#include "can_netdev.h"
+#include "can_nd.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *

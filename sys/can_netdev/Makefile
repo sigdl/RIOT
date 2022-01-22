@@ -1,3 +1,3 @@
-MODULE = can_netdev_utils
+MODULE = can_netdev
 
 include $(RIOTBASE)/Makefile.base
