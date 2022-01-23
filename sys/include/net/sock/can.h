@@ -45,6 +45,7 @@ extern "C" {
  */
 typedef enum {
     SOCK_LAST,
+    SOCK_FILTER,
 } sock_find_t;
 
 /**
@@ -75,7 +76,7 @@ struct sock_can {
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-int sock_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t mode);
+int sock_can_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t type, uint8_t data);
 
 
 #ifdef __cplusplus

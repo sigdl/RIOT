@@ -32,6 +32,7 @@
 
 #include "can_nd.h"
 #include "net/sock/can.h"
+#include "can_netdev/can_netdev.h"
 
 #define ENABLE_DEBUG            1
 #include "debug.h"
@@ -82,8 +83,6 @@ static int  pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_
 static int  pcan_nd_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode);
 int         pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter);
-int         filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type);
-static int  pcan_nd_findfilter(can_nd_t *dev, sock_can_t *sock, int8_t filter);
 static inline void rx_isr(can_nd_t *dev, uint8_t mailbox);
 static inline void tx_isr(can_nd_t *dev);
 static inline void sce_isr(can_nd_t *dev);
@@ -344,7 +343,7 @@ static inline void rx_isr(can_nd_t *dev, uint8_t mailbox)
         filter = (dev->eparams->device->sFIFOMailBox[mailbox].RDTR & CAN_RDT0R_FMI_Msk) >> CAN_RDT0R_FMI_Pos;
 
         /* Search for this filter */
-        resp = pcan_nd_findfilter(dev, sock, filter);
+        resp = sock_can_find(&dev->scparams, sock, SOCK_FILTER, filter);
 
         /* If no associated sock found */
         if(resp < 0) {
@@ -707,56 +706,6 @@ static int pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode)
     return resp;
 }
 
-/**
- * @brief STM32 CAN filter search function
- *
- * This function searches in all associated socks for filter fx
- *
- * @param[in]   dev         device descriptor
- * @param[in]   filter      filter of interest
- * @param[out]  sock        sock with filter of interest
- *
- * @return                  0 on success
- * @return                  <0 on error
- */
-static int pcan_nd_findfilter(can_nd_t *dev, sock_can_t *sock, int8_t filter)
-{
-    uint8_t i;
-
-
-    /*Load first sock of this iface */
-    sock = dev->scparams.first_sock;
-
-    /* If no sock */
-    if(sock == NULL) {
-
-        /* Return failure */
-        return -ENODATA;
-    }
-
-    /* Cycle through sock list */
-    while(sock != NULL) {
-
-        /* Cycle through filters */
-        for(i = 0; i < sock->num_filters; i++) {
-
-            /* if filter is found */
-            if(sock->filters[i].filter_num == filter) {
-
-                /* Return sucess */
-                return 0;
-            }
-        }
-
-        /*Load next filter of this iface */
-        sock = sock->next_sock;
-    }
-
-    /* Return failure */
-    return -ENODATA;
-
-}
-
 /*------------------------------------------------------------------------------*
  *                                 Public Data                                  *
  *------------------------------------------------------------------------------*/
@@ -1040,7 +989,7 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
         socketcan_filter_t *last = NULL;
 
         /* Add filter to list */
-        filter_find(&dev->scparams, last, FILTER_LAST);
+        nd_filter_find(&dev->scparams, last, FILTER_LAST);
         last->next_filter = filter;
     }
 
@@ -1049,40 +998,6 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
 
     /* Filter init state OFF */
     dev->eparams->device->FMR &= ~CAN_FMR_FINIT_Msk;
-
-    return 0;
-}
-
-/**
- * @brief   Search a sock in a sock list
- *
- * @param[in]  scparams   Pointer to SocketCAN device's params structure
- * @param[out] filter     Response pointer
- * @param[in]  mode       Type of search
- *                          
- */
-int filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type)
-{
-    switch (type)
-    {
-        /* Find last filter in dev's list */
-        case FILTER_LAST:
-
-                /* Load beginning of filter list */
-                filter = scparams->first_filter;
-
-                while(filter->next_filter != NULL) {
-
-                    /* Load next filter in list */
-                    filter = filter->next_filter;
-                }
-
-                return 0;
-            break;
-    
-        default:
-            break;
-    }
 
     return 0;
 }

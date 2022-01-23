@@ -134,7 +134,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
     else {
 
         /* Add sock to list */
-        sock_find(sock->scparams, last, SOCK_LAST);
+        sock_can_find(sock->scparams, last, SOCK_LAST, 0);
         last->next_sock = sock;
     }
     
@@ -142,30 +142,66 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
 }
 
 /**
- * @brief   Search a sock in a sock list
+ * @brief   Search some sock in a sock list
  *
  * @param[in]  scparams   Pointer to SocketCAN device's params structure
  * @param[out] sock       Response pointer
- * @param[in]  mode       Type of search
+ * @param[in]  type       Type of search
+ * @param[in]  data       Extra parameter
  *                          
  */
-int sock_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t type)
+int sock_can_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t type, uint8_t data)
 {
     switch (type)
     {
-        /* Find last sock in dev's list */
+        /* Find last sock in list */
         case SOCK_LAST:
 
-                /* Load beginning of sock list */
-                sock = scparams->first_sock;
+            /* Load beginning of sock list */
+            sock = scparams->first_sock;
 
-                while(sock->next_sock != NULL) {
+            while(sock->next_sock != NULL) {
 
-                    /* Load next sock in list */
-                    sock = sock->next_sock;
+                /* Load next sock in list */
+                sock = sock->next_sock;
+            }
+
+            return 0;
+            break;
+
+        /* Find sock with filter number 'data' */
+        case SOCK_FILTER:
+
+            /*Load first sock of this iface */
+            sock = scparams->first_sock;
+
+            /* If no sock */
+            if(sock == NULL) {
+
+                /* Return failure */
+                return -ENODATA;
+            }
+
+            /* Cycle through sock list */
+            while(sock != NULL) {
+
+                /* Cycle through filters */
+                for(uint8_t i = 0; i < sock->num_filters; i++) {
+
+                    /* if filter is found */
+                    if(sock->filters[i].filter_num == data) {
+
+                        /* Return sucess */
+                        return 0;
+                    }
                 }
 
-                return 0;
+                /*Load next filter of this iface */
+                sock = sock->next_sock;
+            }
+
+            /* Return failure */
+            return -ENODATA;
             break;
     
         default:

@@ -592,6 +592,42 @@ static const shell_command_t shell_cmds[] = {
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
+/**
+ * @brief   Search a sock in a sock list
+ *
+ * @param[in]  scparams   Pointer to SocketCAN device's params structure
+ * @param[out] filter     Response pointer
+ * @param[in]  mode       Type of search
+ *                          
+ */
+int nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type)
+{
+    switch (type)
+    {
+        /* Find last filter in dev's list */
+        case FILTER_LAST:
+
+                /* Load beginning of filter list */
+                filter = scparams->first_filter;
+
+                while(filter->next_filter != NULL) {
+
+                    /* Load next filter in list */
+                    filter = filter->next_filter;
+                }
+
+                return 0;
+            break;
+    
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+
+
 void can_netdev_cmds(void)
 {
     char line_buf[SHELL_DEFAULT_BUFSIZE];
