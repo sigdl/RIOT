@@ -20,8 +20,8 @@
  * @author      Grr <gebbet00@gmail.com>
  */
 
-#ifndef CAN_NETDEV_H
-#define CAN_NETDEV_H
+#ifndef CAN_ND_H
+#define CAN_ND_H
 
 /*------------------------------------------------------------------------------*
  *                                Included Files                                *
@@ -117,4 +117,4 @@ int  can_netdev_basicconf(can_nd_t *dev, can_confmode_t mode);
 int  can_netdev_opconf(can_nd_t *dev);
 int  pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter);
 can_nd_t * get_can_netdev(int8_t device);
-#endif /* CAN_NETDEV_H */
+#endif /* CAN_ND_H */

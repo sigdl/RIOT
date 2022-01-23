@@ -27,7 +27,7 @@
 #include <string.h>
 
 #include "net/gnrc.h"
-#include "net/gnrc/netif/can_netdev.h"
+#include "net/gnrc/netif/can_nd.h"
 
 #define ENABLE_DEBUG 0
 #include "debug.h"

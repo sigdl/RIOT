@@ -20,8 +20,8 @@
  * @author      Grr <gebbet00@gmail.com>
  */
 
-#ifndef CAN_NETDEV_TEST_H
-#define CAN_NETDEV_TEST_H
+#ifndef CAN_NETDEV_H
+#define CAN_NETDEV_H
 
 /*------------------------------------------------------------------------------*
  *                                Included Files                                *
@@ -46,6 +46,7 @@
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
+int  nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type);
 void can_netdev_cmds(void);
 
-#endif /* CAN_NETDEV_TEST_H */
+#endif /* CAN_NETDEV_H */

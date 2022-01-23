@@ -23,7 +23,7 @@
 #include "log.h"
 #include "mcp2515net.h"
 #include "mcp2515net_params.h"
-#include "net/gnrc/netif/can.h"
+#include "net/gnrc/netif/can_nd.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *

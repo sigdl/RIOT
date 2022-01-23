@@ -23,7 +23,7 @@
 #include "log.h"
 #include "can_nd.h"
 #include "can_nd_params.h"
-#include "net/gnrc/netif/can_netdev.h"
+#include "net/gnrc/netif/can_nd.h"
 #include "pm_layered.h"
 
 /*------------------------------------------------------------------------------*

@@ -15,8 +15,8 @@
  *
  * @author  Grr <gebbet00@gmail.com>
  */
-#ifndef NET_GNRC_NETIF_CAN_H
-#define NET_GNRC_NETIF_CAN_H
+#ifndef NET_GNRC_NETIF_CAN_ND_H
+#define NET_GNRC_NETIF_CAN_ND_H
 
 #include "net/gnrc/netif.h"
 
@@ -50,5 +50,5 @@ int gnrc_netif_can_create(gnrc_netif_t  *netif,
 }
 #endif
 
-#endif /* NET_GNRC_NETIF_CAN_H */
+#endif /* NET_GNRC_NETIF_CAN_ND_H */
 /** @} */
