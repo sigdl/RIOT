@@ -101,24 +101,27 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
     /* Get iface type */
     iface_type = sock->scparams->iface & CAN_IFACE_TYPE_Msk;
 
-    /* Loop through filters */
-    for(i = 0; i < sock->num_filters; i++) {
+    /* Loop through filter banks */
+    for(i = 0; i < sock->num_fbanks; i++) {
 
         /* Evaluate parameters */
         /*assert(sock->filters[i]);*/
 
-        /* Verify filter */
-        resp = nd_filter_find(sock->scparams, &sock->filters[i], CAN_FILTERFIND_SAME);
+        /* Search for filter with same parameters */
+        resp = nd_filter_find(sock->scparams, &sock->filterbanks[i], CAN_FILTERFIND_SAME);
 
         /* If there's a filter with same parameters */
         if(resp == -EEXIST) {
             return resp;
         }
 
+        /* Config num of existing filter banks as filter bank number */
+        sock->filterbanks[i].fbank_num = resp;
+
         switch(iface_type) {
 
             case CAN_IFACE_TYPE_STM32:
-                resp = pcan_filterconf(dev, &sock->filters[i]);
+                resp = pcan_filterconf(dev, &sock->filterbanks[i]);
                 break;
         }
 
@@ -202,11 +205,11 @@ int sock_can_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t ty
             /* Cycle through sock list */
             while(sock != NULL) {
 
-                /* Cycle through filters */
-                for(uint8_t i = 0; i < sock->num_filters; i++) {
+                /* Cycle through fbanks */
+                for(uint8_t i = 0; i < sock->num_fbanks; i++) {
 
                     /* if filter is found */
-                    if(sock->filters[i].filter_num == data) {
+                    if(sock->filterbanks[i].fbank_num == data) {
 
                         /* Return sucess */
                         return 0;

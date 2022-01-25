@@ -46,7 +46,7 @@
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-int  nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type);
+int  nd_filter_find(socketcan_params_t *scparams, socketcan_filterbank_t *filter, filter_find_t type);
 void can_netdev_cmds(void);
 
 #endif /* CAN_NETDEV_H */

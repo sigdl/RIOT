@@ -82,7 +82,7 @@ static int  pcan_nd_recv(netdev_t *netdev, void *buf, size_t max_len, void *info
 static int  pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  pcan_nd_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode);
-int         pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter);
+int         pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter);
 static inline void rx_isr(can_nd_t *dev, uint8_t mailbox);
 static inline void tx_isr(can_nd_t *dev);
 static inline void sce_isr(can_nd_t *dev);
@@ -894,7 +894,7 @@ int pcan_nd_opconf(can_nd_t *dev)
  *
  *
  */
-int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
+int pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter)
 {
     uint32_t mask_on;
     uint32_t mask_off;
@@ -904,8 +904,8 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
 
     /* Calculate masks for turning ON and OFF  */
-    mask_on  = 0x1 << filter->filter_num;
-    mask_off = 0xfffffffe << filter->filter_num;
+    mask_on  = 0x1 << filter->fbank_num;
+    mask_off = 0xfffffffe << filter->fbank_num;
 
     /* Deactivate filter */
     dev->eparams->device->FA1R &= mask_off;
@@ -984,28 +984,28 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
     }
 
     /* Load Mask/ID values */
-    dev->eparams->device->sFilterRegister[filter->filter_num].FR1 =
+    dev->eparams->device->sFilterRegister[filter->fbank_num].FR1 =
         filter->can_id;
-    dev->eparams->device->sFilterRegister[filter->filter_num].FR2 =
+    dev->eparams->device->sFilterRegister[filter->fbank_num].FR2 =
         filter->can_mask;
 
     /* Make sure current filter is last in list */
-    filter->next_filter = NULL;
+    filter->next_fbank = NULL;
 
     /* If it's at the beginning of list */
-    if(dev->scparams.first_filter == NULL) {
+    if(dev->scparams.first_fbank == NULL) {
 
         /* Register current filter as fist filter */
-        dev->scparams.first_filter = filter;
+        dev->scparams.first_fbank = filter;
     }
 
     /* If it's NOT at the beginning of list */
     else {
-        socketcan_filter_t *last = NULL;
+        socketcan_filterbank_t *last = NULL;
 
         /* Add filter to list */
         nd_filter_find(&dev->scparams, last, CAN_FILTERFIND_LAST);
-        last->next_filter = filter;
+        last->next_fbank = filter;
     }
 
     /* Increment filter index */

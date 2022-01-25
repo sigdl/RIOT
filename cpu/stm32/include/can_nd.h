@@ -115,6 +115,6 @@ typedef struct {
 void pcan_nd_setup(can_nd_t *dev, uint8_t index);
 int  can_netdev_basicconf(can_nd_t *dev, can_confmode_t mode);
 int  can_netdev_opconf(can_nd_t *dev);
-int  pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter);
+int  pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter);
 can_nd_t * get_can_netdev(int8_t device);
 #endif /* CAN_ND_H */

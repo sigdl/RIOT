@@ -214,18 +214,23 @@ typedef uint8_t socketcan_iface_t;
  * 
  * Needed for recursive use in list of filters
  */
-typedef struct socketcan_filter socketcan_filter_t;
+typedef struct socketcan_filterbank socketcan_filterbank_t;
 
 /**
  * @brief   Definition for SocketCAN identification
+ * 
+ * The struct is called filter BANK because in some CAN adapters, filtering is done
+ * by BANKS which have several individual filters
+ * 
+ * For adapters that have only individual filters, filter bank == filter
  */
-struct socketcan_filter {
-    socketcan_filter_t *next_filter;  /**< Next filter in iface's list          */
-    uint8_t             filter_num;   /**< Filter system number                 */
-    uint8_t             fifo;         /**< FIFO to apply filter                 */
-    socketcan_filtermode_t mode;      /**< Filter mode                          */
-    canid_t             can_id;       /**< Filter ID                            */
-    canid_t             can_mask;     /**< Filter mask                          */
+struct socketcan_filterbank {
+    socketcan_filterbank_t *next_fbank;   /**< Next filter bank in iface's list */
+    uint8_t                 fbank_num;    /**< Filter bank system number        */
+    uint8_t                 fifo;         /**< FIFO to apply filter bank        */
+    socketcan_filtermode_t  mode;         /**< Filter bank mode                 */
+    canid_t                 can_id;       /**< Filter bank ID                   */
+    canid_t                 can_mask;     /**< Filter bank mask                 */
     int (*proto_handler)(can_frame_t *frame); /**< Protocol handler             */
 };
 
@@ -281,7 +286,7 @@ typedef struct {
     socketcan_pm_t             *pm;       /**< CAN power management parameters  */
     netdev_t                    netdev;   /**< Netdev config                    */
     gnrc_netif_t                netif;    /**< Netif config                     */
-    socketcan_filter_t         *first_filter; /**< 1st filter of this interface */
+    socketcan_filterbank_t     *first_fbank;  /**< 1st filter of this interface */
     uint8_t                     filter_idx;   /**< Next idx for new filter      */
     void                       *first_sock;   /**< 1st sock of this interface   */
 } socketcan_params_t;

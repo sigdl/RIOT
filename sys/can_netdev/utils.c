@@ -603,6 +603,7 @@ static const shell_command_t shell_cmds[] = {
 int nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type)
 {
     socketcan_filter_t *tmp;
+    int filter_count;
 
     switch (type)
     {
@@ -641,6 +642,9 @@ int nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, fil
                 return -ENODATA;
             }
 
+            /* Initialize filter count */
+            filter_count = 0;
+
             do {
                 /* If it's the same filter */
                 if(tmp->fifo     == filter->fifo   &&
@@ -654,9 +658,11 @@ int nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, fil
                 /* Load next filter in list */
                 tmp = tmp->next_filter;
 
+                filter_count++;
+
             } while(tmp->next_filter != NULL);
 
-            return 0;
+            return filter_count;
             break;
 
         default:
