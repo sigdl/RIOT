@@ -132,7 +132,8 @@ typedef enum {
  * @brief SocketCAN filter search types
  */
 typedef enum {
-    FILTER_LAST,
+    CAN_FILTERFIND_LAST,
+    CAN_FILTERFIND_SAME,
 } filter_find_t;
 
 /**
@@ -219,7 +220,7 @@ typedef struct socketcan_filter socketcan_filter_t;
  * @brief   Definition for SocketCAN identification
  */
 struct socketcan_filter {
-    socketcan_filter_t *next_filter;  /**< Next filter in  list                 */
+    socketcan_filter_t *next_filter;  /**< Next filter in iface's list          */
     uint8_t             filter_num;   /**< Filter system number                 */
     uint8_t             fifo;         /**< FIFO to apply filter                 */
     socketcan_filtermode_t mode;      /**< Filter mode                          */
@@ -281,6 +282,7 @@ typedef struct {
     netdev_t                    netdev;   /**< Netdev config                    */
     gnrc_netif_t                netif;    /**< Netif config                     */
     socketcan_filter_t         *first_filter; /**< 1st filter of this interface */
+    uint8_t                     filter_idx;   /**< Next idx for new filter      */
     void                       *first_sock;   /**< 1st sock of this interface   */
 } socketcan_params_t;
 

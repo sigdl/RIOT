@@ -839,14 +839,15 @@ int pcan_nd_opconf(can_nd_t *dev)
     /* Configure filter init state ON */
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
 
+    /* Initialize next filter index */
+    dev->scparams.filter_idx = 0;
+
     /* Clear start bank */
     dev->eparams->device->FMR &= ~CAN_FMR_CAN2SB_Msk;
 
     /* Configure start bank */
     dev->eparams->device->FMR |=
         (((uint32_t)dev->eparams->start_bank << CAN_FMR_CAN2SB_Pos) & CAN_FMR_CAN2SB_Msk);
-
-    /* TODO: filter configuration */
 
     /* Configure filter init state OFF */
     dev->eparams->device->FMR &= ~CAN_FMR_FINIT_Msk;
@@ -897,6 +898,7 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
 {
     uint32_t mask_on;
     uint32_t mask_off;
+    uint8_t  idx_inc;
 
     /* Configure filter init state ON */
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
@@ -935,6 +937,10 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
 
             /* FSC = 1 */
             dev->eparams->device->FS1R |= mask_on;
+
+            /* One filter */
+            idx_inc = 1;
+
             break;
     
         case CAN_FILTERMODE_ID32:
@@ -944,6 +950,9 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
             /* FSC = 1 */
             dev->eparams->device->FS1R |= mask_on;
 
+            /* Two filters */
+            idx_inc = 2;
+            
             break;
     
         case CAN_FILTERMODE_MSK16:
@@ -953,6 +962,9 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
             /* FSC = 0 */
             dev->eparams->device->FS1R &= mask_off;
 
+            /* Two filters */
+            idx_inc = 2;
+            
             break;
     
         case CAN_FILTERMODE_ID16:
@@ -962,6 +974,9 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
             /* FSC = 0 */
             dev->eparams->device->FS1R &= mask_off;
 
+            /* Four filters */
+            idx_inc = 4;
+            
             break;
 
         default:
@@ -989,9 +1004,12 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filter_t *filter)
         socketcan_filter_t *last = NULL;
 
         /* Add filter to list */
-        nd_filter_find(&dev->scparams, last, FILTER_LAST);
+        nd_filter_find(&dev->scparams, last, CAN_FILTERFIND_LAST);
         last->next_filter = filter;
     }
+
+    /* Increment filter index */
+    dev->scparams.filter_idx += idx_inc;
 
     /* Activate filter */
     dev->eparams->device->FA1R |= mask_on;

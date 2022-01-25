@@ -26,6 +26,7 @@
 #include "net/sock/can.h"
 #include "net/netif.h"
 #include "can_nd.h"
+#include "can_netdev/can_netdev.h"
 
 /*------------------------------------------------------------------------------*
  *                           Pre-processor Definitions                          *
@@ -80,6 +81,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
     uint8_t       iface_type;
     sock_can_t   *last = NULL;
 
+
     /* Evaluate parameters */
     assert(sock);
 
@@ -92,9 +94,9 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
     }
 
     /* Get containers */
-    netiface = container_of(ndevice, gnrc_netif_t, netif);
-    sock->scparams = container_of(netiface, socketcan_params_t, netif);
-    dev = container_of(sock->scparams, can_nd_t, scparams);
+    netiface       = container_of(ndevice,        gnrc_netif_t,       netif);
+    sock->scparams = container_of(netiface,       socketcan_params_t, netif);
+    dev            = container_of(sock->scparams, can_nd_t,           scparams);
 
     /* Get iface type */
     iface_type = sock->scparams->iface & CAN_IFACE_TYPE_Msk;
@@ -104,6 +106,14 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
 
         /* Evaluate parameters */
         /*assert(sock->filters[i]);*/
+
+        /* Verify filter */
+        resp = nd_filter_find(sock->scparams, &sock->filters[i], CAN_FILTERFIND_SAME);
+
+        /* If there's a filter with same parameters */
+        if(resp == -EEXIST) {
+            return resp;
+        }
 
         switch(iface_type) {
 
@@ -144,7 +154,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
 /**
  * @brief   Search some sock in a sock list
  *
- * @param[in]  scparams   Pointer to SocketCAN device's params structure
+ * @param[in]  scparams   Pointer to device's SocketCAN params structure
  * @param[out] sock       Response pointer
  * @param[in]  type       Type of search
  * @param[in]  data       Extra parameter
@@ -159,6 +169,13 @@ int sock_can_find(socketcan_params_t *scparams, sock_can_t *sock, sock_find_t ty
 
             /* Load beginning of sock list */
             sock = scparams->first_sock;
+
+            /* If no sock */
+            if(sock == NULL) {
+
+                /* Return failure */
+                return -ENODATA;
+            }
 
             while(sock->next_sock != NULL) {
 

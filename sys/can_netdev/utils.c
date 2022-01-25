@@ -593,32 +593,72 @@ static const shell_command_t shell_cmds[] = {
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
 /**
- * @brief   Search a sock in a sock list
+ * @brief   Search filter filter in a filter list
  *
- * @param[in]  scparams   Pointer to SocketCAN device's params structure
- * @param[out] filter     Response pointer
- * @param[in]  mode       Type of search
+ * @param[in]    scparams   Pointer to SocketCAN device's params structure
+ * @param[inout] filter     Filter pointer for input or output
+ * @param[in]    type       Type of search
  *                          
  */
 int nd_filter_find(socketcan_params_t *scparams, socketcan_filter_t *filter, filter_find_t type)
 {
+    socketcan_filter_t *tmp;
+
     switch (type)
     {
-        /* Find last filter in dev's list */
-        case FILTER_LAST:
+        /* Find last filter in list */
+        case CAN_FILTERFIND_LAST:
 
-                /* Load beginning of filter list */
-                filter = scparams->first_filter;
+            /* Load beginning of filter list */
+            filter = scparams->first_filter;
 
-                while(filter->next_filter != NULL) {
+            /* If no filter */
+            if(filter == NULL) {
 
-                    /* Load next filter in list */
-                    filter = filter->next_filter;
-                }
+                /* Return failure */
+                return -ENODATA;
+            }
 
-                return 0;
+            while(filter->next_filter != NULL) {
+
+                /* Load next filter in list */
+                filter = filter->next_filter;
+            }
+
+            return 0;
             break;
     
+        /* Find same filter in list */
+        case CAN_FILTERFIND_SAME:
+
+            /* Load beginning of filter list */
+            tmp = scparams->first_filter;
+
+            /* If no filter */
+            if(tmp == NULL) {
+
+                /* Return failure */
+                return -ENODATA;
+            }
+
+            do {
+                /* If it's the same filter */
+                if(tmp->fifo     == filter->fifo   &&
+                   tmp->mode     == filter->mode   &&
+                   tmp->can_id   == filter->can_id &&
+                   tmp->can_mask == filter->can_mask
+                  ) {
+                    return -EEXIST;
+                }
+
+                /* Load next filter in list */
+                tmp = tmp->next_filter;
+
+            } while(tmp->next_filter != NULL);
+
+            return 0;
+            break;
+
         default:
             break;
     }
