@@ -398,6 +398,8 @@ endif
 
 ifneq (,$(filter gnrc_can,$(USEMODULE)))
   DEFAULT_MODULE += auto_init_gnrc_can
+  USEMODULE += auto_init_gnrc_netif
+  USEMODULE += gnrc
   USEMODULE += gnrc_netif
   USEMODULE += gnrc_netif_can
   USEMODULE += gnrc_nettype_can

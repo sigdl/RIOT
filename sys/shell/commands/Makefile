@@ -88,6 +88,9 @@ endif
 ifneq (,$(filter conn_can,$(USEMODULE)))
   SRC += sc_can.c
 endif
+ifneq (,$(filter can_nd_shell,$(USEMODULE)))
+  SRC += sc_can_nd.c
+endif
 ifneq (,$(filter cord_ep,$(USEMODULE)))
   SRC += sc_cord_ep.c
 endif

@@ -10,6 +10,7 @@ PSEUDOMODULES += base64url
 PSEUDOMODULES += board_software_reset
 PSEUDOMODULES += bq2429x_int
 PSEUDOMODULES += can_mbox
+PSEUDOMODULES += can_nd_shell
 PSEUDOMODULES += can_pm
 PSEUDOMODULES += can_raw
 PSEUDOMODULES += ccn-lite-utils
