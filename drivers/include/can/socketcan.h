@@ -85,6 +85,8 @@ extern "C" {
 #define CAN_IFACE_NUM_6         0x6
 #define CAN_IFACE_NUM_7         0x7
 
+#define CAN_ADDRESS             "00:00:00:00"
+
 /*------------------------------------------------------------------------------*
  *                                  Public Types                                *
  *------------------------------------------------------------------------------*/
@@ -280,6 +282,7 @@ typedef struct {
  * @brief   Definition for SocketCAN parameters
  */
 typedef struct {
+    char                       *name;     /**< Iface name                       */
     socketcan_iface_t           iface;    /**< CAN iface type and number        */
     const socketcan_ifparams_t *ifparams; /**< CAN interface parameters         */
     const socketcan_timing_t   *timing;   /**< CAN timing parameters            */

@@ -79,7 +79,7 @@ static char pcan_stack[CAN_NETDEV_NUM][CAN_NETDEV_MAC_STACKSIZE];
 /*------------------------------------------------------------------------------*
  *                                Public Functions                              *
  *------------------------------------------------------------------------------*/
-void auto_init_can_netdev(void)
+void auto_init_pcan_nd(void)
 {
     uint8_t i;
     uint8_t pm_level = 0;
@@ -91,6 +91,9 @@ void auto_init_can_netdev(void)
 
     for (i = 0; i < CAN_NETDEV_NUM; i++) {
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
+
+        /* Configure name */
+        pcan_arr[i].scparams.name     = (char *)&pcan_name[i];
 
         /* Config iface type and number */
         pcan_arr[i].scparams.iface    = pcan_iface[i];
@@ -112,7 +115,7 @@ void auto_init_can_netdev(void)
                                pcan_stack[i],
                                CAN_NETDEV_MAC_STACKSIZE,
                                CAN_NETDEV_MAC_PRIO,
-                               iface_name,
+                               pcan_arr[i].scparams.name,
                               &pcan_arr[i].scparams.netdev
                              );
 
