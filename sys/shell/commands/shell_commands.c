@@ -147,6 +147,10 @@ extern int _gnrc_6ctx(int argc, char **argv);
 extern int _gnrc_6lo_frag_stats(int argc, char **argv);
 #endif
 
+#ifdef MODULE_CAN_ND_SHELL
+extern int _can_nd_utils(int argc, char **argv);
+#endif
+
 #ifdef MODULE_CCN_LITE_UTILS
 extern int _ccnl_open(int argc, char **argv);
 extern int _ccnl_content(int argc, char **argv);
@@ -302,6 +306,9 @@ const shell_command_t _shell_command_list[] = {
 #endif
 #ifdef MODULE_GNRC_SIXLOWPAN_FRAG_STATS
     {"6lo_frag", "6LoWPAN fragment statistics", _gnrc_6lo_frag_stats },
+#endif
+#ifdef MODULE_CAN_ND_SHELL
+    {"can", "CAN nd utilities", _can_nd_utils},
 #endif
 #ifdef MODULE_SAUL_REG
     {"saul", "interact with sensors and actuators using SAUL", _saul },

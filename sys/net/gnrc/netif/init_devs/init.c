@@ -72,9 +72,9 @@ void gnrc_netif_init_devs(void)
         auto_init_enc28j60();
     }
 
-    if (IS_USED(MODULE_PERIPH_CAN_NETDEV)) {
-        extern void auto_init_can_netdev(void);
-        auto_init_can_netdev();
+    if (IS_USED(MODULE_PERIPH_CAN_ND)) {
+        extern void auto_init_pcan_nd(void);
+        auto_init_pcan_nd();
     }
 
     if (IS_USED(MODULE_MCP2515NET)) {

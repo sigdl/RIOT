@@ -29,8 +29,8 @@
 #include "shell.h"
 #include "shell_commands.h"
 
-#ifdef MODULE_CAN_NETDEV_UTILS
-#include "can_netdev/can_netdev_utils.h"
+#ifdef MODULE_CAN_ND_SHELL
+#include "can_netdev/can_netdev.h"
 #endif
 
 #ifdef MODULE_NETIF
@@ -48,7 +48,7 @@ int main(void)
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 #endif
 
-#ifdef MODULE_CAN_NETDEV_UTILS
+#ifdef MODULE_CAN_ND_SHELL
     /* Run CAN netdev test cmds */
     can_netdev_cmds();
 #endif
