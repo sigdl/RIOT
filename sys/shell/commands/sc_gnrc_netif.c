@@ -85,7 +85,9 @@ static const struct {
 static void _print_iface_name(netif_t *iface)
 {
     char name[CONFIG_NETIF_NAMELENMAX];
+
     netif_get_name(iface, name);
+
     printf("%s", name);
 }
 
@@ -1785,6 +1787,8 @@ int _gnrc_netif_send(int argc, char **argv)
 
 int _gnrc_netif_config(int argc, char **argv)
 {
+
+    /* No parameters. List ifaces */
     if (argc < 2) {
         netif_t *netif = NULL;
 
@@ -1794,17 +1798,32 @@ int _gnrc_netif_config(int argc, char **argv)
 
         return 0;
     }
+
+    /* Command with parameters */
     else {
+
+        /* First parameter 'help' */
+        if (strcmp(argv[1], "help") == 0) {
+            _usage(argv[0]);
+            return 0;
+        }
+
+#ifdef MODULE_NETIF_DEVNAME
+        netif_t *iface = netif_get_by_devname(argv[1], strlen(argv[1]));
+#else
         netif_t *iface = netif_get_by_name(argv[1]);
+#endif
+
         if (!iface) {
             puts("error: invalid interface given");
             return 1;
         }
 
-        if (argc < 3) {
+        else if (argc < 3) {
             _netif_list(iface);
             return 0;
         }
+        
         else if (strcmp(argv[2], "set") == 0) {
             if (argc < 5) {
                 _set_usage(argv[0]);
@@ -1891,6 +1910,7 @@ int _gnrc_netif_config(int argc, char **argv)
             _usage(argv[0]);
             return 0;
         }
+
         else {
             return _netif_flag(argv[0], iface, argv[2]);
         }

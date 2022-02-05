@@ -22,7 +22,7 @@ endif
 
 CFLAGS_LINK  = -ffunction-sections -fdata-sections -fno-builtin -fshort-enums
 CFLAGS_DBG  ?= -ggdb -g3
-CFLAGS_OPT  ?= -Os
+CFLAGS_OPT  ?= -O0
 
 CFLAGS += $(CFLAGS_CPU) $(CFLAGS_LINK) $(CFLAGS_DBG) $(CFLAGS_OPT)
 

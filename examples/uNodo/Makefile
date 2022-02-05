@@ -22,13 +22,46 @@ QUIET ?= 1
 # Modules to include:
 #USEMODULE += periph_eth
 #USEMODULE += mcp2515net
+#USEMODULE += periph_can_nd
+#USEMODULE += gnrc_can
+#USEMODULE += shell
+#USEMODULE += shell_commands
+#USEMODULE += can_nd_shell
+#USEMODULE += ps
+#USEMODULE += ztimer_usec
+
+
+
+
+#USEMODULE += mcp2515net
 USEMODULE += periph_can_nd
 USEMODULE += gnrc_can
+#USEMODULE += periph_eth
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += can_nd_shell
-USEMODULE += ps
-#USEMODULE += ztimer_usec
+USEMODULE += can_netdev
+
+# Use modules for networking
+# gnrc is a meta module including all required, basic gnrc networking modules
+USEMODULE += gnrc
+
+# use the default network interface for the board
+#USEMODULE += netdev_default
+
+# Use CAN module
+USEMODULE += gnrc_netif_can
+
+# automatically initialize the network interface
+USEMODULE += auto_init_gnrc_netif
+
+
+
+
+
+
+
+
 
 # Include and auto-initialize all available sensors
 USEMODULE += saul_default
@@ -42,6 +75,8 @@ USEMODULE += gnrc_pktdump
 
 # Use PM
 USEMODULE += pm_layered
+
+USEMODULE += ps
 
 FEATURES_OPTIONAL += periph_rtc
 

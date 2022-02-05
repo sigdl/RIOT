@@ -282,7 +282,6 @@ typedef struct {
  * @brief   Definition for SocketCAN parameters
  */
 typedef struct {
-    char                       *name;     /**< Iface name                       */
     socketcan_iface_t           iface;    /**< CAN iface type and number        */
     const socketcan_ifparams_t *ifparams; /**< CAN interface parameters         */
     const socketcan_timing_t   *timing;   /**< CAN timing parameters            */

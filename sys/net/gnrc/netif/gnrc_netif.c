@@ -49,7 +49,7 @@
 #include "net/gnrc/netif/internal.h"
 #include "net/gnrc/tx_sync.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include "debug.h"
 
 
@@ -1792,7 +1792,7 @@ static void *_gnrc_netif_thread(void *args)
         _process_events_await_msg(netif, &msg);
 
         /* dispatch netdev, MAC and gnrc_netapi messages */
-        DEBUG("gnrc_netif: message %u\n", (unsigned)msg.type);
+        DEBUG("\ngnrc_netif: message %u\n", (unsigned)msg.type);
 
         switch (msg.type) {
 

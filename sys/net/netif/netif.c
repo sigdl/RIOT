@@ -56,6 +56,36 @@ __attribute__((weak)) int16_t netif_get_id(const netif_t *netif)
     return -1;
 }
 
+netif_t *netif_get_by_devname(const char *name, size_t name_len)
+{
+    assert(name);
+
+    if (name_len > CONFIG_NETIF_NAMELENMAX) {
+        return NULL;
+    }
+
+    list_node_t *node = netif_list.next;
+
+    while (node) {
+
+        /* Obtain netif */
+        netif_t *netif = container_of(node, netif_t, node);
+
+       /* Obtain size of netif name */
+       size_t len = strlen(netif->name);
+
+       /* If everything is the same */
+       if ((len == name_len) && (strncmp(name, netif->name, name_len) == 0)) {
+           return (netif_t *)node;
+       }
+
+       /* Get next node */
+       node = node->next;
+    }
+
+    return NULL;
+}
+
 netif_t *netif_get_by_name_buffer(const char *name, size_t name_len)
 {
     assert(name);

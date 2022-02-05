@@ -93,7 +93,7 @@ void auto_init_pcan_nd(void)
         LOG_DEBUG("[auto_init_netif] initializing PERIPH CAN #%u\n", i);
 
         /* Configure name */
-        pcan_arr[i].scparams.name     = (char *)&pcan_name[i];
+        pcan_arr[i].scparams.netif.netif.name = (char *)&pcan_name[i];
 
         /* Config iface type and number */
         pcan_arr[i].scparams.iface    = pcan_iface[i];
@@ -115,7 +115,7 @@ void auto_init_pcan_nd(void)
                                pcan_stack[i],
                                CAN_NETDEV_MAC_STACKSIZE,
                                CAN_NETDEV_MAC_PRIO,
-                               pcan_arr[i].scparams.name,
+                               pcan_arr[i].scparams.netif.netif.name,
                               &pcan_arr[i].scparams.netdev
                              );
 

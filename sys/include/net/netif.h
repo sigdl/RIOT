@@ -67,9 +67,10 @@ extern "C" {
  * @note All network interfaces should inherit from this structure.
  */
 typedef struct {
-    list_node_t node;               /**< Pointer to the next interface */
+    char               *name;       /**< Iface name                             */
+    list_node_t         node;       /**< Pointer to the next interface          */
 #ifdef MODULE_NETSTATS_NEIGHBOR
-    netstats_nb_table_t neighbors;  /**< Structure containing all L2 neighbors */
+    netstats_nb_table_t neighbors;  /**< Structure containing all L2 neighbors  */
 #endif
 } netif_t;
 
@@ -143,6 +144,19 @@ static inline netif_t *netif_get_by_name(const char *name)
 {
     return netif_get_by_name_buffer(name, strlen(name));
 }
+
+/**
+ * @brief   Gets interface by device name
+ *
+ * @pre `name != NULL`
+ *
+ * @param[in] name          The name of an interface as an array of chars. Must not be `NULL`.
+ * @param[in] name_len      Number of characters in @p name.
+ *
+ * @return  Pointer to the interface that matches the name
+ * @retval  NULL if no interface is named @p name.
+ */
+netif_t *netif_get_by_devname(const char *name, size_t name_len);
 
 /**
  * @brief   Gets interface by a numeric identifier.

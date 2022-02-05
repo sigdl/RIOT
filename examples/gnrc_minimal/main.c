@@ -24,12 +24,21 @@
 #include "net/ipv6/addr.h"
 #include "net/gnrc.h"
 #include "net/gnrc/netif.h"
+#include "shell.h"
+#include "msg.h"
+
+#define MAIN_QUEUE_SIZE     (8)
+static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
+
+static const shell_command_t shell_commands[] = {
+    { NULL, NULL, NULL }
+};
 
 int main(void)
 {
 
     puts("RIOT network stack example application");
-
+#if 0
     /* get interfaces and print their addresses */
     gnrc_netif_t *netif = NULL;
     while ((netif = gnrc_netif_iter(netif))) {
@@ -47,6 +56,17 @@ int main(void)
             printf("My address is %s\n", ipv6_addr);
         }
     }
+#endif
+
+    /* we need a message queue for the thread running the shell in order to
+     * receive potentially fast incoming networking packets */
+    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
+    puts("RIOT network stack example application");
+
+    /* start shell */
+    puts("All up, running the shell now");
+    char line_buf[SHELL_DEFAULT_BUFSIZE];
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
     /* main thread exits */
     return 0;

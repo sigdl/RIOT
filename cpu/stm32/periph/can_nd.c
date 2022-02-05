@@ -115,7 +115,7 @@ static const netdev_driver_t pcan_nd_driver = {
 static int pcan_nd_init(netdev_t *netdev)
 {
     socketcan_params_t *scparams = container_of(netdev,   socketcan_params_t, netdev);
-    can_nd_t       *dev      = container_of(scparams, can_nd_t,       scparams);
+    can_nd_t           *dev      = container_of(scparams, can_nd_t,       scparams);
 
 
     /*Disable interrupts before changing anything*/
@@ -610,6 +610,11 @@ static int pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_l
             break;
         }
         
+        case NETOPT_ADDRESS:
+            strncpy(value, CAN_ADDRESS, max_len);
+            resp = strlen(value);
+            break;
+
         default:
             return -ENOTSUP;
     }
@@ -652,7 +657,7 @@ static int pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode)
     uint32_t wait_cnt = MODE_MAX_DELAY;
     int resp = 0;
 
-    DEBUG("can_netdev: Switching to mode %d\n", mode);
+    DEBUG("pcan_nd: Switching to mode %d\n", mode);
     switch (mode) {
 
         case CAN_OPMODE_INIT:
