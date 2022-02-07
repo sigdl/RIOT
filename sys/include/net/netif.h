@@ -29,6 +29,7 @@
  * @author  Martine Lenders <m.lenders@fu-berlin.de>
  * @author  Kaspar Schleiser <kaspar@schleiser.de>
  * @author  José Ignacio Alamos <jose.alamos@haw-hamburg.de>
+ * @author  Grr <gebbet00@gmail.com>
  */
 #ifndef NET_NETIF_H
 #define NET_NETIF_H
@@ -67,10 +68,12 @@ extern "C" {
  * @note All network interfaces should inherit from this structure.
  */
 typedef struct {
-    char               *name;       /**< Iface name                             */
     list_node_t         node;       /**< Pointer to the next interface          */
 #ifdef MODULE_NETSTATS_NEIGHBOR
     netstats_nb_table_t neighbors;  /**< Structure containing all L2 neighbors  */
+#endif
+#ifdef MODULE_NETIF_DEVNAME
+    char               *name;       /**< Iface name                             */
 #endif
 } netif_t;
 

@@ -614,9 +614,15 @@ static void _netif_list(netif_t *iface)
     netopt_state_t state;
     unsigned line_thresh = 1;
 
-    printf("Iface  ");
-    _print_iface_name(iface);
-    printf(" ");
+
+#ifdef MODULE_NETIF_DEVNAME
+    printf("Iface  %s ", iface->name);
+#else
+    char name[CONFIG_NETIF_NAMELENMAX];
+    netif_get_name(iface, name);
+
+    printf("Iface  %s ", name);
+#endif
 
     /* XXX divide options and flags by at least two spaces! */
     res = netif_get_opt(iface, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));

@@ -102,6 +102,7 @@ PSEUDOMODULES += netdev_ieee802154
 PSEUDOMODULES += netdev_eth
 PSEUDOMODULES += netdev_layer
 PSEUDOMODULES += netdev_register
+PSEUDOMODULES += netif_devname
 PSEUDOMODULES += netstats
 PSEUDOMODULES += netstats_l2
 PSEUDOMODULES += netstats_neighbor_etx
