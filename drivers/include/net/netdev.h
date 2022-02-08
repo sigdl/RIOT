@@ -201,8 +201,8 @@ extern "C" {
 #include "net/netopt.h"
 #include "kernel_defines.h"
 
-#ifdef MODULE_L2FILTER
-#include "net/l2filter.h"
+#if defined MODULE_L2FILTER || defined MODULE_L2FILTERBANK
+  #include "net/l2filter.h"
 #endif
 
 /**
@@ -353,6 +353,10 @@ struct netdev {
 #endif
 #ifdef MODULE_L2FILTER
     l2filter_t filter[CONFIG_L2FILTER_LISTSIZE]; /**< link layer address filters */
+#endif
+#ifdef MODULE_L2FILTERBANK
+    l2filterbank_t *first_fbank;            /**< 1st filter of this interface   */
+    uint8_t         filter_idx;             /**< Next idx for new filter        */
 #endif
 #ifdef MODULE_NETDEV_REGISTER
     netdev_type_t type;                     /**< driver type used for netdev    */

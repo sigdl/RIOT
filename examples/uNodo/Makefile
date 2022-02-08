@@ -42,6 +42,7 @@ USEMODULE += shell_commands
 USEMODULE += can_nd_shell
 USEMODULE += can_netdev
 USEMODULE += netif_devname
+USEMODULE += l2filterbank
 
 # Use modules for networking
 # gnrc is a meta module including all required, basic gnrc networking modules

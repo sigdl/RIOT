@@ -66,7 +66,7 @@ typedef void (*sock_can_cb_t)(sock_can_t *sock, void *arg);
 struct sock_can {
     sock_can_t             *next_sock;   /**< Next sock using this interface    */
     uint8_t                 num_fbanks;  /**< Number of filter for this socket  */
-    socketcan_filterbank_t *filterbanks; /**< Filter banks array                */
+    l2filterbank_t         *filterbanks; /**< Filter banks array                */
     socketcan_params_t     *scparams;    /**< SocketCAN device's params         */
     socketcan_buffer_t     *buffer;      /**< Frame buffer                      */
     socketcan_protocol_t    protocol;    /**< Socket protocol                   */

@@ -82,6 +82,7 @@ PSEUDOMODULES += i2c_scan
 PSEUDOMODULES += ieee802154_security
 PSEUDOMODULES += ieee802154_submac
 PSEUDOMODULES += ina3221_alerts
+PSEUDOMODULES += l2filterbank
 PSEUDOMODULES += l2filter_blacklist
 PSEUDOMODULES += l2filter_whitelist
 PSEUDOMODULES += libstdcpp

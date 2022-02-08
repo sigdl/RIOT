@@ -108,7 +108,7 @@ int sock_can_create(sock_can_t *sock, char *iface_name)
         /*assert(sock->filters[i]);*/
 
         /* Search for filter with same parameters */
-        resp = nd_filter_find(sock->scparams, &sock->filterbanks[i], CAN_FILTERFIND_SAME);
+        resp = l2filterbank_find(sock->scparams, &sock->filterbanks[i], CAN_FILTERFIND_SAME);
 
         /* If there's a filter with same parameters */
         if(resp == -EEXIST) {

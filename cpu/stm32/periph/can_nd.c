@@ -32,7 +32,7 @@
 
 #include "can_nd.h"
 #include "net/sock/can.h"
-#include "can_netdev/can_netdev.h"
+#include "net/l2filter.h"
 
 #define ENABLE_DEBUG            1
 #include "debug.h"
@@ -82,7 +82,7 @@ static int  pcan_nd_recv(netdev_t *netdev, void *buf, size_t max_len, void *info
 static int  pcan_nd_get(netdev_t *netdev, netopt_t opt, void *value, size_t max_len);
 static int  pcan_nd_set(netdev_t *netdev, netopt_t opt, const void *value, size_t value_len);
 static int  pcan_nd_mode(can_nd_t *dev, socketcan_opmode_t mode);
-int         pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter);
+int         pcan_filterconf(can_nd_t *dev, l2filterbank_t *filter);
 static inline void rx_isr(can_nd_t *dev, uint8_t mailbox);
 static inline void tx_isr(can_nd_t *dev);
 static inline void sce_isr(can_nd_t *dev);
@@ -845,7 +845,7 @@ int pcan_nd_opconf(can_nd_t *dev)
     dev->eparams->device->FMR |= CAN_FMR_FINIT_Msk;
 
     /* Initialize next filter index */
-    dev->scparams.filter_idx = 0;
+    dev->scparams.netdev.filter_idx = 0;
 
     /* Clear start bank */
     dev->eparams->device->FMR &= ~CAN_FMR_CAN2SB_Msk;
@@ -899,7 +899,7 @@ int pcan_nd_opconf(can_nd_t *dev)
  *
  *
  */
-int pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter)
+int pcan_filterconf(can_nd_t *dev, l2filterbank_t *filter)
 {
     uint32_t mask_on;
     uint32_t mask_off;
@@ -998,23 +998,23 @@ int pcan_filterconf(can_nd_t *dev, socketcan_filterbank_t *filter)
     filter->next_fbank = NULL;
 
     /* If it's at the beginning of list */
-    if(dev->scparams.first_fbank == NULL) {
+    if(dev->scparams.netdev.first_fbank == NULL) {
 
         /* Register current filter as fist filter */
-        dev->scparams.first_fbank = filter;
+        dev->scparams.netdev.first_fbank = filter;
     }
 
     /* If it's NOT at the beginning of list */
     else {
-        socketcan_filterbank_t *last = NULL;
+        l2filterbank_t *last = NULL;
 
         /* Add filter to list */
-        nd_filter_find(&dev->scparams, last, CAN_FILTERFIND_LAST);
+        l2filterbank_find(&dev->scparams, last, CAN_FILTERFIND_LAST);
         last->next_fbank = filter;
     }
 
     /* Increment filter index */
-    dev->scparams.filter_idx += idx_inc;
+    dev->scparams.netdev.filter_idx += idx_inc;
 
     /* Activate filter */
     dev->eparams->device->FA1R |= mask_on;

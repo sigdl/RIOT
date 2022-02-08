@@ -61,6 +61,32 @@ extern "C" {
 /** @} */
 
 /**
+ * @brief   Forward declarations for SocketCAN filterbank
+ * 
+ */
+typedef struct l2filterbank     l2filterbank_t;
+typedef struct socketcan_params socketcan_params_t;
+
+/**
+ * @brief SocketCAN filter modes
+ */
+typedef enum {
+    CAN_FILTERMODE_OFF,                     /* Turn filter OFF                  */
+    CAN_FILTERMODE_MSK32,                   /* 32bit mask + ID filter           */
+    CAN_FILTERMODE_ID32,                    /* 32bit ID   + ID filter           */
+    CAN_FILTERMODE_MSK16,                   /* 16bit mask + ID filter           */
+    CAN_FILTERMODE_ID16                     /* 16bit ID   + ID filter           */
+} l2filtermode_t;
+
+/**
+ * @brief SocketCAN filter search types
+ */
+typedef enum {
+    CAN_FILTERFIND_LAST,
+    CAN_FILTERFIND_SAME,
+} l2filterbank_find_t;
+
+/**
  * @brief   Filter list entries
  *
  * The filter list supports address entries with differing length. This is
@@ -71,6 +97,24 @@ typedef struct {
     uint8_t addr[CONFIG_L2FILTER_ADDR_MAXLEN];     /**< link layer address */
     size_t addr_len;                               /**< address length in byte */
 } l2filter_t;
+
+/**
+ * @brief   Definition for SocketCAN filterbank
+ * 
+ * The struct is called filter BANK because in some CAN adapters, filtering is done
+ * by BANKS which have several individual filters
+ * 
+ * For adapters that have only individual filters, filter bank == filter
+ */
+struct l2filterbank {
+    l2filterbank_t *next_fbank; /**< Next filter bank in iface's list           */
+    uint8_t         fbank_num;  /**< Filter bank system number                  */
+    uint8_t         fifo;       /**< FIFO to apply filter bank                  */
+    l2filtermode_t  mode;       /**< Filter bank mode                           */
+    uint32_t        can_id;     /**< Filter bank ID                             */
+    uint32_t        can_mask;   /**< Filter bank mask                           */
+    int (*proto_handler)(void *frame); /**< Protocol handler                    */
+};
 
 /**
  * @brief   Add an entry to a devices filter list
@@ -126,6 +170,16 @@ int l2filter_rm(l2filter_t *list, const void *addr, size_t addr_len);
  * @return  in blacklist mode: false if @p addr is in @p list
  */
 bool l2filter_pass(const l2filter_t *list, const void *addr, size_t addr_len);
+
+/**
+ * @brief   Search filter filter in a filter list
+ *
+ * @param[in]    scparams   Pointer to SocketCAN device's params structure
+ * @param[inout] filter     Filter pointer for input or output
+ * @param[in]    type       Type of search
+ *                          
+ */
+int  l2filterbank_find(socketcan_params_t *scparams, l2filterbank_t *filter, l2filterbank_find_t type);
 
 #ifdef __cplusplus
 }
